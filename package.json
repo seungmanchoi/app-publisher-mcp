@@ -1,0 +1,56 @@
+{
+  "name": "@seungmanchoi/app-publisher-mcp",
+  "version": "1.0.0",
+  "description": "MCP server for vibe coders - AI app icon generation, auto-resizing for iOS/Android, and store publishing automation",
+  "type": "module",
+  "main": "dist/index.js",
+  "bin": {
+    "app-publisher-mcp": "dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "lint": "eslint src/",
+    "start": "node dist/index.js",
+    "prepublishOnly": "npm run build"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "keywords": [
+    "mcp",
+    "app-publisher",
+    "icon-generator",
+    "app-store",
+    "google-play",
+    "fastlane",
+    "vibe-coding",
+    "ai-icon",
+    "claude-code"
+  ],
+  "author": "seungmanchoi",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/seungmanchoi/app-publisher-mcp.git"
+  },
+  "homepage": "https://github.com/seungmanchoi/app-publisher-mcp#readme",
+  "bugs": {
+    "url": "https://github.com/seungmanchoi/app-publisher-mcp/issues"
+  },
+  "dependencies": {
+    "@google/genai": "^1.0.0",
+    "@modelcontextprotocol/sdk": "^1.12.1",
+    "sharp": "^0.33.0",
+    "zod": "^3.24.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.0.0",
+    "@types/node": "^22.0.0",
+    "eslint": "^9.0.0",
+    "typescript": "^5.7.0",
+    "typescript-eslint": "^8.0.0"
+  }
+}
