@@ -15,6 +15,8 @@ Stop wasting time on Figma for app icons or manually resizing images for every s
 | `setup_fastlane` | Generate fastlane config for store publishing |
 | `publish_ios` | Publish to App Store via fastlane |
 | `publish_android` | Publish to Google Play via fastlane |
+| `generate_store_listing` | Auto-generate App Store / Google Play metadata from project |
+| `get_publishing_guide` | Step-by-step publishing guide (iOS 12 steps / Android 7 steps) |
 | `configure_api_key` | Set your Gemini API key |
 | `configure_model` | Choose AI model (speed vs quality) |
 | `get_status` | Check current configuration |
@@ -194,6 +196,38 @@ This creates:
 - `fastlane/Appfile` - App configuration
 - `fastlane/metadata/` - Store listing metadata structure
 
+### Generate Store Listing Metadata
+
+> "Generate store listing metadata for my project at ~/myapp"
+
+Analyzes your project (package.json, app.json, README.md, etc.) and generates:
+
+**iOS (App Store Connect):**
+- App name, subtitle, description, keywords
+- Category recommendation
+- Privacy policy content
+- Review notes for App Review team
+
+**Android (Google Play Console):**
+- App title, short/full description
+- Category recommendation
+- Content rating guide
+- Privacy policy content
+
+You can specify platform and language:
+> "Generate iOS store listing in Korean for ~/myapp"
+
+### Get Publishing Guide
+
+> "Show me the iOS publishing guide for my project at ~/myapp"
+
+Returns a detailed step-by-step guide customized with your project info:
+
+- **iOS**: 12 steps (Developer account → TestFlight)
+- **Android**: 7 steps (Play Console → Release management)
+- Auto-detects framework (Expo, React Native, Flutter, Native)
+- Includes actual build commands for your framework
+
 ### Publish to Stores
 
 > "Publish my iOS app to the App Store. Project is at ~/myapp"
@@ -258,7 +292,9 @@ This MCP is designed for the vibe coding workflow - build your app with AI, then
 1. Build your app with Claude Code
 2. "Generate an icon for my app" → AI creates the icon
 3. "Resize it for iOS and Android" → All sizes generated
-4. "Set up fastlane and publish" → App goes to stores
+4. "Generate store listing for my project" → All metadata ready
+5. "Show me the iOS publishing guide" → Step-by-step instructions
+6. "Set up fastlane and publish" → App goes to stores
 ```
 
 No design skills needed. No Figma. No manual resizing. Just vibe and ship.
