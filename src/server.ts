@@ -13,6 +13,8 @@ import {
   handlePublishIOS,
   handlePublishAndroid,
   handleGetStatus,
+  handleGenerateStoreListing,
+  handleGetPublishingGuide,
 } from './tools/index.js';
 
 export class AppPublisherServer {
@@ -128,6 +130,42 @@ export class AppPublisherServer {
       'Check the current configuration status including API key, model, fastlane installation, and generated assets.',
       {},
       async () => handleGetStatus(),
+    );
+
+    this.server.tool(
+      'generate_store_listing',
+      'Analyze a project directory and generate complete store listing content (app name, description, keywords, privacy policy, etc.) for iOS App Store and/or Google Play Store.',
+      {
+        projectDir: z.string().describe('Path to the project directory to analyze'),
+        platform: z
+          .enum(['ios', 'android', 'both'])
+          .optional()
+          .describe('Target platform: ios, android, or both (default: both)'),
+        language: z
+          .enum(['ko', 'en'])
+          .optional()
+          .describe('Output language: ko (Korean) or en (English). Default: ko'),
+      },
+      async (args) => handleGenerateStoreListing(args),
+    );
+
+    this.server.tool(
+      'get_publishing_guide',
+      'Get a comprehensive step-by-step guide for publishing an app to the iOS App Store or Google Play Store. Customized based on project info if projectDir is provided.',
+      {
+        platform: z
+          .enum(['ios', 'android'])
+          .describe('Target platform: ios or android'),
+        projectDir: z
+          .string()
+          .optional()
+          .describe('Optional path to project directory for customized guide with actual bundle ID, app name, etc.'),
+        framework: z
+          .enum(['expo', 'react-native', 'flutter', 'native'])
+          .optional()
+          .describe('App framework (auto-detected if projectDir is given). Options: expo, react-native, flutter, native'),
+      },
+      async (args) => handleGetPublishingGuide(args),
     );
   }
 

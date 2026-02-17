@@ -10,4 +10,6 @@ export {
   handlePublishIOS,
   handlePublishAndroid,
   handleGetStatus,
+  handleGenerateStoreListing,
+  handleGetPublishingGuide,
 } from './handlers.js';

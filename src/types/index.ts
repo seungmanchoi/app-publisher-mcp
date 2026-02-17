@@ -27,3 +27,37 @@ export interface IFastlaneConfig {
   jsonKeyFile?: string;
   packageName?: string;
 }
+
+export type TPlatform = 'ios' | 'android' | 'both';
+
+export type TLanguage = 'ko' | 'en';
+
+export type TFramework = 'expo' | 'react-native' | 'flutter' | 'native';
+
+export interface IProjectInfo {
+  appName: string;
+  bundleId: string;
+  version: string;
+  description: string;
+  features: string[];
+  framework: TFramework;
+  permissions: string[];
+  hasAds: boolean;
+  hasAnalytics: boolean;
+  hasInAppPurchase: boolean;
+  hasUserAuth: boolean;
+  teamId?: string;
+  dependencies: string[];
+}
+
+export interface IStoreListingArgs {
+  projectDir: string;
+  platform?: TPlatform;
+  language?: TLanguage;
+}
+
+export interface IPublishingGuideArgs {
+  platform: 'ios' | 'android';
+  projectDir?: string;
+  framework?: TFramework;
+}
