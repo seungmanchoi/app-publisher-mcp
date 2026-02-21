@@ -2276,11 +2276,11 @@ function generateIOSGuide(
   guide += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
   guide += `필수 스크린샷 (최소 1장, 최대 10장):\n\n`;
   guide += `iPhone 6.7인치 (필수):\n`;
-  guide += `  - 크기: 1290 x 2796 px (세로) 또는 2796 x 1290 px (가로)\n`;
-  guide += `  - 대상: iPhone 16 Pro Max, iPhone 15 Pro Max, iPhone 15 Plus, iPhone 14 Pro Max\n\n`;
-  guide += `iPhone 6.5인치:\n`;
   guide += `  - 크기: 1284 x 2778 px (세로) 또는 2778 x 1284 px (가로)\n`;
-  guide += `  - 대상: iPhone 14 Plus, iPhone 13 Pro Max, iPhone 12 Pro Max\n\n`;
+  guide += `  - 대상: iPhone 16 Pro Max, iPhone 15 Pro Max, iPhone 15 Plus, iPhone 14 Pro Max\n\n`;
+  guide += `iPhone 6.5인치 (필수):\n`;
+  guide += `  - 크기: 1242 x 2688 px (세로) 또는 2688 x 1242 px (가로)\n`;
+  guide += `  - 대상: iPhone 11 Pro Max, iPhone XS Max\n\n`;
   guide += `iPhone 5.5인치:\n`;
   guide += `  - 크기: 1242 x 2208 px (세로) 또는 2208 x 1242 px (가로)\n`;
   guide += `  - 대상: iPhone 8 Plus, iPhone 7 Plus\n\n`;

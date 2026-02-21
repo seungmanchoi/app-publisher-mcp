@@ -5,9 +5,9 @@ import { geminiService } from './gemini.js';
 import { IStoreScreenshotSize, IStoreScreenshotResult } from '../types/index.js';
 
 const IOS_SCREENSHOT_SIZES: IStoreScreenshotSize[] = [
-  { name: 'iPhone_6.7', width: 1290, height: 2796, platform: 'ios', device: 'iPhone 6.7"', required: true },
-  { name: 'iPhone_6.5', width: 1284, height: 2778, platform: 'ios', device: 'iPhone 6.5"', required: true },
-  { name: 'iPhone_5.5', width: 1242, height: 2208, platform: 'ios', device: 'iPhone 5.5"', required: true },
+  { name: 'iPhone_6.7', width: 1284, height: 2778, platform: 'ios', device: 'iPhone 6.7"', required: true },
+  { name: 'iPhone_6.5', width: 1242, height: 2688, platform: 'ios', device: 'iPhone 6.5"', required: true },
+  { name: 'iPhone_5.5', width: 1242, height: 2208, platform: 'ios', device: 'iPhone 5.5"', required: false },
   { name: 'iPad_12.9', width: 2048, height: 2732, platform: 'ios', device: 'iPad 12.9"', required: false },
 ];
 

@@ -284,9 +284,9 @@ This:
 
 | Device | Dimensions |
 |--------|-----------|
-| iPhone 6.7" (required) | 1290 x 2796 |
-| iPhone 6.5" (required) | 1284 x 2778 |
-| iPhone 5.5" (required) | 1242 x 2208 |
+| iPhone 6.7" (required) | 1284 x 2778 |
+| iPhone 6.5" (required) | 1242 x 2688 |
+| iPhone 5.5" | 1242 x 2208 |
 | iPad 12.9" | 2048 x 2732 |
 
 **Android Store Sizes:**
