@@ -1958,6 +1958,391 @@ function generateContentRatingGuideZh(info: IProjectInfo): string {
   return guide;
 }
 
+function generateAppPrivacyGuide(info: IProjectInfo): string {
+  let guide = '';
+
+  guide += `=== App Store 앱 개인정보 보호 가이드 ===\n\n`;
+  guide += `App Store Connect > 신뢰 및 안전 > 앱 개인정보 보호\n`;
+  guide += `프로젝트 분석을 기반으로 자동 생성된 답변입니다.\n`;
+  guide += `실제 앱에 맞게 검토 후 수정하세요.\n\n`;
+
+  // Determine what data types are collected
+  const collectsAnyData = info.hasAds || info.hasAnalytics || info.hasUserAuth ||
+    info.hasInAppPurchase || info.hasHealthContent;
+
+  // --- Step 1: Does the app collect data? ---
+  guide += `--- 1단계: 데이터 수집 여부 ---\n\n`;
+  guide += `"사용자로부터 데이터를 수집합니까?"\n`;
+  guide += `답변: ${collectsAnyData ? '예' : '아니요'}\n\n`;
+
+  if (!collectsAnyData) {
+    guide += `감지된 데이터 수집 의존성이 없습니다.\n`;
+    guide += `서드파티 SDK를 사용하지 않거나, 사용자 데이터를 수집하지 않는 경우입니다.\n\n`;
+    guide += `참고: 앱이 서드파티 분석, 광고, 인증 등을 사용하는 경우\n`;
+    guide += `Apple 기준으로 데이터를 수집하는 것으로 간주될 수 있습니다.\n\n`;
+
+    // Summary table
+    guide += `--- 요약 ---\n\n`;
+    guide += `| 항목 | 답변 |\n`;
+    guide += `|------|------|\n`;
+    guide += `| 데이터 수집 | 아니요 |\n\n`;
+
+    return guide;
+  }
+
+  guide += `다음 의존성이 감지되어 데이터 수집으로 판단합니다:\n`;
+  if (info.hasAds) guide += `  - 광고 SDK (AdMob 등): 기기 ID, 광고 데이터 수집\n`;
+  if (info.hasAnalytics) guide += `  - 분석/통계 SDK: 사용 데이터, 기기 ID 수집\n`;
+  if (info.hasUserAuth) guide += `  - 사용자 인증: 이름, 이메일 등 수집 가능\n`;
+  if (info.hasInAppPurchase) guide += `  - 인앱 구매: 구매 내역 수집\n`;
+  if (info.hasHealthContent) guide += `  - 건강/피트니스: 건강 데이터 수집 가능\n`;
+  guide += `\n`;
+
+  // --- Step 2: Data Types Selection ---
+  guide += `--- 2단계: 수집하는 데이터 유형 선택 ---\n\n`;
+  guide += `Apple이 정의한 데이터 카테고리별 선택 여부입니다.\n\n`;
+
+  // Contact Info
+  const collectsContactInfo = info.hasUserAuth;
+  guide += `[연락처 정보]\n`;
+  guide += `이름: ${collectsContactInfo ? '✅ 선택' : '☐ 선택 안 함'}\n`;
+  guide += `이메일 주소: ${collectsContactInfo ? '✅ 선택' : '☐ 선택 안 함'}\n`;
+  guide += `전화번호: ☐ 선택 안 함\n`;
+  guide += `실제 주소: ☐ 선택 안 함\n`;
+  guide += `기타 사용자 연락처 정보: ☐ 선택 안 함\n`;
+  if (collectsContactInfo) {
+    guide += `  → 사용자 인증 관련 의존성이 감지되었습니다.\n`;
+  } else {
+    guide += `  → 사용자 인증이 감지되지 않았습니다.\n`;
+  }
+  guide += `\n`;
+
+  // Health & Fitness
+  guide += `[건강 및 피트니스]\n`;
+  guide += `건강: ${info.hasHealthContent ? '✅ 선택' : '☐ 선택 안 함'}\n`;
+  guide += `피트니스: ${info.hasHealthContent ? '✅ 선택' : '☐ 선택 안 함'}\n`;
+  if (info.hasHealthContent) {
+    guide += `  → 건강/피트니스 관련 의존성이 감지되었습니다.\n`;
+  }
+  guide += `\n`;
+
+  // Financial Info
+  guide += `[금융 정보]\n`;
+  guide += `결제 정보: ${info.hasInAppPurchase ? '✅ 선택' : '☐ 선택 안 함'}\n`;
+  guide += `신용 정보: ☐ 선택 안 함\n`;
+  guide += `기타 금융 정보: ☐ 선택 안 함\n`;
+  if (info.hasInAppPurchase) {
+    guide += `  → 인앱 구매 관련 의존성이 감지되었습니다.\n`;
+  }
+  guide += `\n`;
+
+  // Location
+  guide += `[위치]\n`;
+  const hasLocation = info.permissions.some(
+    (p) => p.toLowerCase().includes('location'),
+  ) || info.dependencies.some(
+    (d) => d.includes('location') || d.includes('geolocation'),
+  );
+  guide += `정확한 위치: ${hasLocation ? '✅ 선택' : '☐ 선택 안 함'}\n`;
+  guide += `대략적인 위치: ${hasLocation ? '✅ 선택' : '☐ 선택 안 함'}\n`;
+  if (hasLocation) {
+    guide += `  → 위치 관련 권한 또는 의존성이 감지되었습니다.\n`;
+  }
+  guide += `\n`;
+
+  // Sensitive Info
+  guide += `[민감한 정보]\n`;
+  guide += `민감한 정보: ☐ 선택 안 함\n`;
+  guide += `  → 인종, 성별, 종교, 정치 등 민감 데이터 수집이 감지되지 않았습니다.\n\n`;
+
+  // Contacts
+  const hasContacts = info.permissions.some(
+    (p) => p.toLowerCase().includes('contacts'),
+  ) || info.dependencies.some(
+    (d) => d.includes('contacts'),
+  );
+  guide += `[연락처]\n`;
+  guide += `연락처: ${hasContacts ? '✅ 선택' : '☐ 선택 안 함'}\n\n`;
+
+  // User Content
+  guide += `[사용자 콘텐츠]\n`;
+  const hasPhotos = info.permissions.some(
+    (p) => p.toLowerCase().includes('photo'),
+  ) || info.dependencies.some(
+    (d) => d.includes('image-picker') || d.includes('camera'),
+  );
+  guide += `사진 또는 비디오: ${hasPhotos ? '✅ 선택' : '☐ 선택 안 함'}\n`;
+  guide += `오디오 데이터: ☐ 선택 안 함\n`;
+  guide += `게임 플레이 콘텐츠: ☐ 선택 안 함\n`;
+  guide += `고객 지원: ☐ 선택 안 함\n`;
+  guide += `기타 사용자 콘텐츠: ${info.hasUGC ? '✅ 선택' : '☐ 선택 안 함'}\n\n`;
+
+  // Browsing History
+  guide += `[검색 기록]\n`;
+  guide += `검색 기록: ${info.hasWebView ? '✅ 선택' : '☐ 선택 안 함'}\n\n`;
+
+  // Search History
+  guide += `[검색 내역]\n`;
+  guide += `검색 내역: ☐ 선택 안 함\n\n`;
+
+  // Identifiers
+  guide += `[식별자]\n`;
+  guide += `사용자 ID: ${info.hasUserAuth ? '✅ 선택' : '☐ 선택 안 함'}\n`;
+  guide += `기기 ID: ${info.hasAds || info.hasAnalytics ? '✅ 선택' : '☐ 선택 안 함'}\n`;
+  if (info.hasAds) {
+    guide += `  → 광고 SDK가 IDFA(광고 식별자)를 수집합니다.\n`;
+  }
+  if (info.hasAnalytics) {
+    guide += `  → 분석 SDK가 기기 식별자를 수집합니다.\n`;
+  }
+  guide += `\n`;
+
+  // Purchases
+  guide += `[구입 항목]\n`;
+  guide += `구입 내역: ${info.hasInAppPurchase ? '✅ 선택' : '☐ 선택 안 함'}\n\n`;
+
+  // Usage Data
+  guide += `[사용 데이터]\n`;
+  guide += `제품 상호작용: ${info.hasAnalytics ? '✅ 선택' : '☐ 선택 안 함'}\n`;
+  guide += `광고 데이터: ${info.hasAds ? '✅ 선택' : '☐ 선택 안 함'}\n`;
+  guide += `기타 사용 데이터: ☐ 선택 안 함\n`;
+  if (info.hasAds) {
+    guide += `  → 광고 SDK가 광고 노출/클릭 데이터를 수집합니다.\n`;
+  }
+  if (info.hasAnalytics) {
+    guide += `  → 분석 SDK가 사용자 상호작용 데이터를 수집합니다.\n`;
+  }
+  guide += `\n`;
+
+  // Diagnostics
+  guide += `[진단]\n`;
+  const hasCrashReporting = info.dependencies.some(
+    (d) => d.includes('sentry') || d.includes('crashlytics') || d.includes('bugsnag'),
+  );
+  guide += `충돌 데이터: ${hasCrashReporting || info.hasAnalytics ? '✅ 선택' : '☐ 선택 안 함'}\n`;
+  guide += `성능 데이터: ${info.hasAnalytics ? '✅ 선택' : '☐ 선택 안 함'}\n`;
+  guide += `기타 진단 데이터: ☐ 선택 안 함\n\n`;
+
+  // Surroundings
+  guide += `[주변 환경]\n`;
+  guide += `환경 스캐닝: ☐ 선택 안 함\n\n`;
+
+  // Body
+  guide += `[신체]\n`;
+  guide += `손/몸 움직임: ☐ 선택 안 함\n`;
+  guide += `머리 움직임: ☐ 선택 안 함\n\n`;
+
+  // --- Step 3: Detailed settings per data type ---
+  guide += `--- 3단계: 수집 데이터별 세부 설정 ---\n\n`;
+  guide += `선택한 각 데이터 유형에 대해 다음 3가지를 설정해야 합니다:\n`;
+  guide += `  1. 사용 목적 (복수 선택 가능)\n`;
+  guide += `  2. 사용자 신원에 연결되는지 여부\n`;
+  guide += `  3. 추적에 사용되는지 여부\n\n`;
+
+  guide += `[사용 목적 옵션]\n`;
+  guide += `  - 서드파티 광고: 타사 광고 네트워크를 통한 광고 표시\n`;
+  guide += `  - 개발자의 광고 또는 마케팅: 자체 광고/마케팅 목적\n`;
+  guide += `  - 분석: 앱 사용 분석 및 개선\n`;
+  guide += `  - 제품 개인화: 사용자 맞춤 경험 제공\n`;
+  guide += `  - 앱 기능: 앱의 핵심 기능 동작에 필요\n`;
+  guide += `  - 기타 목적: 위에 해당하지 않는 기타 목적\n\n`;
+
+  guide += `[추적 정의]\n`;
+  guide += `"추적"이란 앱에서 수집한 사용자/기기 데이터를 타사의\n`;
+  guide += `데이터와 연결하여 타겟 광고 또는 광고 측정에 사용하거나,\n`;
+  guide += `데이터 브로커와 공유하는 것을 의미합니다.\n\n`;
+
+  // Detail for each collected data type
+
+  // Device ID (Ads or Analytics)
+  if (info.hasAds || info.hasAnalytics) {
+    guide += `[기기 ID - 세부 설정]\n`;
+    const deviceIdUsages: string[] = [];
+    if (info.hasAds) deviceIdUsages.push('서드파티 광고');
+    if (info.hasAnalytics) deviceIdUsages.push('분석');
+    guide += `사용 목적: ${deviceIdUsages.join(', ')}\n`;
+    guide += `사용자 신원에 연결: ${info.hasUserAuth ? '예' : '아니요'}\n`;
+    guide += `  → ${info.hasUserAuth ? '사용자 인증으로 기기와 계정이 연결될 수 있습니다.' : '사용자 로그인 없이 익명으로 수집됩니다.'}\n`;
+    guide += `추적에 사용: ${info.hasAds ? '예' : '아니요'}\n`;
+    if (info.hasAds) {
+      guide += `  → 광고 SDK가 IDFA를 사용하여 타사 광고 네트워크와 데이터를 공유합니다.\n`;
+    }
+    guide += `\n`;
+  }
+
+  // Advertising Data (Ads)
+  if (info.hasAds) {
+    guide += `[광고 데이터 - 세부 설정]\n`;
+    guide += `사용 목적: 서드파티 광고\n`;
+    guide += `사용자 신원에 연결: ${info.hasUserAuth ? '예' : '아니요'}\n`;
+    guide += `  → ${info.hasUserAuth ? '사용자 계정과 광고 데이터가 연결될 수 있습니다.' : '사용자 로그인 없이 익명으로 수집됩니다.'}\n`;
+    guide += `추적에 사용: 예\n`;
+    guide += `  → 광고 노출/클릭 데이터가 광고 네트워크와 공유됩니다.\n\n`;
+  }
+
+  // User ID (Auth)
+  if (info.hasUserAuth) {
+    guide += `[사용자 ID - 세부 설정]\n`;
+    guide += `사용 목적: 앱 기능, 분석\n`;
+    guide += `사용자 신원에 연결: 예\n`;
+    guide += `  → 사용자 계정 식별을 위해 사용됩니다.\n`;
+    guide += `추적에 사용: 아니요\n`;
+    guide += `  → 자체 서비스에서만 사용되며 타사와 공유하지 않습니다.\n\n`;
+  }
+
+  // Contact Info (Auth)
+  if (info.hasUserAuth) {
+    guide += `[이름, 이메일 주소 - 세부 설정]\n`;
+    guide += `사용 목적: 앱 기능\n`;
+    guide += `사용자 신원에 연결: 예\n`;
+    guide += `  → 계정 생성 및 로그인에 필요합니다.\n`;
+    guide += `추적에 사용: 아니요\n\n`;
+  }
+
+  // Product Interaction (Analytics)
+  if (info.hasAnalytics) {
+    guide += `[제품 상호작용 - 세부 설정]\n`;
+    guide += `사용 목적: 분석\n`;
+    guide += `사용자 신원에 연결: ${info.hasUserAuth ? '예' : '아니요'}\n`;
+    guide += `추적에 사용: 아니요\n`;
+    guide += `  → 자체 앱 분석에만 사용됩니다.\n\n`;
+  }
+
+  // Crash Data (Analytics/Crash reporting)
+  if (hasCrashReporting || info.hasAnalytics) {
+    guide += `[충돌 데이터 - 세부 설정]\n`;
+    guide += `사용 목적: 앱 기능\n`;
+    guide += `사용자 신원에 연결: 아니요\n`;
+    guide += `추적에 사용: 아니요\n`;
+    guide += `  → 앱 안정성 개선을 위해 수집됩니다.\n\n`;
+  }
+
+  // Purchase History (IAP)
+  if (info.hasInAppPurchase) {
+    guide += `[구입 내역 - 세부 설정]\n`;
+    guide += `사용 목적: 앱 기능\n`;
+    guide += `사용자 신원에 연결: 예\n`;
+    guide += `추적에 사용: 아니요\n`;
+    guide += `  → 구매 복원 및 구독 관리에 필요합니다.\n\n`;
+  }
+
+  // Payment Info (IAP)
+  if (info.hasInAppPurchase) {
+    guide += `[결제 정보 - 세부 설정]\n`;
+    guide += `사용 목적: 앱 기능\n`;
+    guide += `사용자 신원에 연결: 예\n`;
+    guide += `추적에 사용: 아니요\n`;
+    guide += `  → Apple을 통한 결제 처리에 필요합니다.\n\n`;
+  }
+
+  // Health Data
+  if (info.hasHealthContent) {
+    guide += `[건강 및 피트니스 데이터 - 세부 설정]\n`;
+    guide += `사용 목적: 앱 기능\n`;
+    guide += `사용자 신원에 연결: 예\n`;
+    guide += `추적에 사용: 아니요\n`;
+    guide += `  → 건강/피트니스 기능 제공에 필요합니다.\n\n`;
+  }
+
+  // Location
+  if (hasLocation) {
+    guide += `[위치 데이터 - 세부 설정]\n`;
+    guide += `사용 목적: 앱 기능\n`;
+    guide += `사용자 신원에 연결: ${info.hasUserAuth ? '예' : '아니요'}\n`;
+    guide += `추적에 사용: 아니요\n`;
+    guide += `  → 위치 기반 기능 제공에 필요합니다.\n\n`;
+  }
+
+  // Photos
+  if (hasPhotos) {
+    guide += `[사진 또는 비디오 - 세부 설정]\n`;
+    guide += `사용 목적: 앱 기능\n`;
+    guide += `사용자 신원에 연결: ${info.hasUserAuth ? '예' : '아니요'}\n`;
+    guide += `추적에 사용: 아니요\n\n`;
+  }
+
+  // Browsing History (WebView)
+  if (info.hasWebView) {
+    guide += `[검색 기록 - 세부 설정]\n`;
+    guide += `사용 목적: 앱 기능\n`;
+    guide += `사용자 신원에 연결: ${info.hasUserAuth ? '예' : '아니요'}\n`;
+    guide += `추적에 사용: 아니요\n\n`;
+  }
+
+  // --- Summary Table ---
+  guide += `--- 요약 ---\n\n`;
+  guide += `| 데이터 유형 | 수집 | 사용 목적 | 신원 연결 | 추적 |\n`;
+  guide += `|------------|------|----------|----------|------|\n`;
+
+  if (info.hasAds || info.hasAnalytics) {
+    const devicePurpose = [
+      info.hasAds ? '서드파티 광고' : '',
+      info.hasAnalytics ? '분석' : '',
+    ].filter(Boolean).join(', ');
+    guide += `| 기기 ID | ✅ | ${devicePurpose} | ${info.hasUserAuth ? '예' : '아니요'} | ${info.hasAds ? '예' : '아니요'} |\n`;
+  }
+  if (info.hasAds) {
+    guide += `| 광고 데이터 | ✅ | 서드파티 광고 | ${info.hasUserAuth ? '예' : '아니요'} | 예 |\n`;
+  }
+  if (info.hasUserAuth) {
+    guide += `| 사용자 ID | ✅ | 앱 기능, 분석 | 예 | 아니요 |\n`;
+    guide += `| 이름 | ✅ | 앱 기능 | 예 | 아니요 |\n`;
+    guide += `| 이메일 주소 | ✅ | 앱 기능 | 예 | 아니요 |\n`;
+  }
+  if (info.hasAnalytics) {
+    guide += `| 제품 상호작용 | ✅ | 분석 | ${info.hasUserAuth ? '예' : '아니요'} | 아니요 |\n`;
+  }
+  if (hasCrashReporting || info.hasAnalytics) {
+    guide += `| 충돌 데이터 | ✅ | 앱 기능 | 아니요 | 아니요 |\n`;
+  }
+  if (info.hasInAppPurchase) {
+    guide += `| 구입 내역 | ✅ | 앱 기능 | 예 | 아니요 |\n`;
+    guide += `| 결제 정보 | ✅ | 앱 기능 | 예 | 아니요 |\n`;
+  }
+  if (info.hasHealthContent) {
+    guide += `| 건강/피트니스 | ✅ | 앱 기능 | 예 | 아니요 |\n`;
+  }
+  if (hasLocation) {
+    guide += `| 위치 | ✅ | 앱 기능 | ${info.hasUserAuth ? '예' : '아니요'} | 아니요 |\n`;
+  }
+  if (hasPhotos) {
+    guide += `| 사진/비디오 | ✅ | 앱 기능 | ${info.hasUserAuth ? '예' : '아니요'} | 아니요 |\n`;
+  }
+  if (info.hasWebView) {
+    guide += `| 검색 기록 | ✅ | 앱 기능 | ${info.hasUserAuth ? '예' : '아니요'} | 아니요 |\n`;
+  }
+
+  guide += `\n`;
+
+  // --- Common scenarios ---
+  guide += `--- 일반적인 시나리오별 안내 ---\n\n`;
+
+  guide += `[AdMob만 사용하는 앱]\n`;
+  guide += `데이터 수집: 예\n`;
+  guide += `수집 데이터: 기기 ID, 광고 데이터\n`;
+  guide += `기기 ID → 서드파티 광고 목적, 신원 미연결, 추적 사용\n`;
+  guide += `광고 데이터 → 서드파티 광고 목적, 신원 미연결, 추적 사용\n\n`;
+
+  guide += `[AdMob + Firebase Analytics]\n`;
+  guide += `데이터 수집: 예\n`;
+  guide += `수집 데이터: 기기 ID, 광고 데이터, 제품 상호작용, 충돌 데이터\n`;
+  guide += `기기 ID → 서드파티 광고 + 분석, 신원 미연결, 추적 사용\n`;
+  guide += `광고 데이터 → 서드파티 광고, 신원 미연결, 추적 사용\n`;
+  guide += `제품 상호작용 → 분석, 신원 미연결, 추적 미사용\n`;
+  guide += `충돌 데이터 → 앱 기능, 신원 미연결, 추적 미사용\n\n`;
+
+  guide += `[로그인 + 인앱 구매]\n`;
+  guide += `데이터 수집: 예\n`;
+  guide += `수집 데이터: 사용자 ID, 이름, 이메일, 구입 내역, 결제 정보\n`;
+  guide += `모두 앱 기능 목적, 신원 연결, 추적 미사용\n\n`;
+
+  guide += `참고: 이 가이드는 일반적인 패턴을 기반으로 합니다.\n`;
+  guide += `실제 SDK 문서를 확인하여 정확한 데이터 수집 범위를 파악하세요.\n`;
+  guide += `Apple 개인정보 보호 세부 사항: https://developer.apple.com/app-store/app-privacy-details/\n`;
+
+  return guide;
+}
+
 function generateIOSAgeRatingGuide(info: IProjectInfo): string {
   let guide = '';
 
@@ -2152,6 +2537,12 @@ export async function handleGenerateStoreListing(args: IStoreListingArgs): Promi
   // iOS Age Rating Guide
   if (platform === 'ios' || platform === 'both') {
     output += generateIOSAgeRatingGuide(projectInfo);
+    output += `\n${'='.repeat(50)}\n\n`;
+  }
+
+  // App Privacy Guide (iOS)
+  if (platform === 'ios' || platform === 'both') {
+    output += generateAppPrivacyGuide(projectInfo);
     output += `\n${'='.repeat(50)}\n\n`;
   }
 

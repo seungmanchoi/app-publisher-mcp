@@ -131,6 +131,30 @@ export interface IIOSAgeRating {
   step7: IIOSAgeRatingStep7;
 }
 
+// App Privacy Data Types
+export type TPrivacyDataUsage =
+  | 'third_party_advertising'
+  | 'developer_advertising'
+  | 'analytics'
+  | 'product_personalization'
+  | 'app_functionality'
+  | 'other';
+
+export interface IPrivacyDataType {
+  name: string;
+  nameKo: string;
+  collected: boolean;
+  usages: TPrivacyDataUsage[];
+  linkedToIdentity: boolean;
+  usedForTracking: boolean;
+  reason: string;
+}
+
+export interface IAppPrivacyGuide {
+  collectsData: boolean;
+  dataTypes: IPrivacyDataType[];
+}
+
 export interface IStoreListingArgs {
   projectDir: string;
   platform?: TPlatform;

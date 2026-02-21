@@ -15,7 +15,7 @@ Stop wasting time on Figma for app icons or manually resizing images for every s
 | `setup_fastlane` | Generate fastlane config for store publishing |
 | `publish_ios` | Publish to App Store via fastlane |
 | `publish_android` | Publish to Google Play via fastlane |
-| `generate_store_listing` | Auto-generate store metadata + iOS age rating guide (4 languages) |
+| `generate_store_listing` | Auto-generate store metadata + iOS age rating guide + App Privacy guide (4 languages) |
 | `get_publishing_guide` | Step-by-step publishing guide (iOS 12 steps / Android 7 steps) |
 | `configure_api_key` | Set your Gemini API key |
 | `configure_model` | Choose AI model (speed vs quality) |
@@ -219,6 +219,7 @@ Analyzes your project (package.json, app.json, README.md, CLAUDE.md, docs/) and 
 - Privacy policy content
 - Review notes for App Review team
 - **iOS Age Rating 7-Step Guide** - Auto-detects app capabilities (ads, UGC, chat, web access, gambling, health content, violence, etc.) and generates complete answers for all 7 steps of the App Store Connect age rating questionnaire
+- **App Privacy Data Guide** - Auto-detects data collection based on dependencies (AdMob, analytics, auth, IAP, etc.) and generates complete answers for the App Store Connect "Trust & Safety > App Privacy" questionnaire, including data types, usage purposes, identity linkage, and tracking status
 
 **Android (Google Play Console):**
 - App title, short/full description
