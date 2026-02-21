@@ -91,6 +91,38 @@ export class GeminiService {
     return this.processResponse(response, outputDir, 'screenshot');
   }
 
+  async editImageWithPrompt(
+    imagePath: string,
+    prompt: string,
+    outputDir: string,
+    prefix: string,
+    model?: string,
+  ): Promise<{ content: TContentItem[]; imagePath: string }> {
+    const client = this.getClient();
+    const modelId = this.resolveModel(model);
+    this.ensureDir(outputDir);
+
+    const imageBuffer = fs.readFileSync(imagePath);
+    const base64Image = imageBuffer.toString('base64');
+    const mimeType = imagePath.endsWith('.jpg') || imagePath.endsWith('.jpeg')
+      ? 'image/jpeg'
+      : 'image/png';
+
+    const response = await client.models.generateContent({
+      model: modelId,
+      contents: [{
+        role: 'user',
+        parts: [
+          { inlineData: { data: base64Image, mimeType } },
+          { text: prompt },
+        ],
+      }],
+      config: { responseModalities: ['Image', 'Text'] },
+    });
+
+    return this.processResponse(response, outputDir, prefix);
+  }
+
   private processResponse(
     response: { candidates?: Array<{ content?: { parts?: Array<{ text?: string; inlineData?: { data?: string; mimeType?: string } }> } }> },
     outputDir: string,

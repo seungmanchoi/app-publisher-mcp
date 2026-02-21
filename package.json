@@ -1,6 +1,6 @@
 {
   "name": "@seungmanchoi/app-publisher-mcp",
-  "version": "1.1.1",
+  "version": "1.2.0",
   "description": "MCP server for vibe coders - AI app icon generation, auto-resizing for iOS/Android, and store publishing automation",
   "type": "module",
   "main": "dist/index.js",
@@ -12,6 +12,8 @@
     "dev": "tsc --watch",
     "lint": "eslint src/",
     "start": "node dist/index.js",
+    "setup:maestro": "curl -Ls 'https://get.maestro.mobile.dev' | bash",
+    "postinstall": "echo '\\n[app-publisher-mcp] Run `npm run setup:maestro` to install Maestro CLI for UI testing (requires Java 17+)\\n'",
     "prepublishOnly": "npm run build"
   },
   "files": [
@@ -71,7 +73,15 @@
     "asset-generation",
     "image-generation",
     "sharp",
-    "contents-json"
+    "contents-json",
+    "maestro",
+    "ui-testing",
+    "ui-test",
+    "e2e-testing",
+    "simulator",
+    "emulator",
+    "screenshot-capture",
+    "test-automation"
   ],
   "author": "seungmanchoi",
   "license": "MIT",

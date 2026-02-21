@@ -61,3 +61,20 @@ export interface IPublishingGuideArgs {
   projectDir?: string;
   framework?: TFramework;
 }
+
+export interface IStoreScreenshotSize {
+  name: string;
+  width: number;
+  height: number;
+  platform: 'ios' | 'android';
+  device: string;
+  required: boolean;
+}
+
+export interface IStoreScreenshotResult {
+  platform: string;
+  device: string;
+  width: number;
+  height: number;
+  path: string;
+}

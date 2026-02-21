@@ -3,7 +3,7 @@ import * as path from 'path';
 import * as os from 'os';
 import * as fs from 'fs';
 import { settingsManager } from '../config/index.js';
-import { geminiService, iconResizerService, fastlaneService } from '../services/index.js';
+import { geminiService, iconResizerService, fastlaneService, maestroService } from '../services/index.js';
 import {
   IProjectInfo,
   IStoreListingArgs,
@@ -189,6 +189,7 @@ export async function handleGetStatus(): Promise<CallToolResult> {
   const apiKey = settingsManager.getApiKey();
   const model = settingsManager.getModel();
   const fastlaneInstalled = fastlaneService.checkInstalled();
+  const maestroInstalled = maestroService.checkInstalled();
 
   const maskedKey = isConfigured
     ? apiKey.substring(0, 8) + '...' + apiKey.substring(apiKey.length - 4)
@@ -198,7 +199,13 @@ export async function handleGetStatus(): Promise<CallToolResult> {
   status += `Gemini API Key: ${maskedKey} (source: ${configSource})\n`;
   status += `Gemini Model: ${model}\n`;
   status += `Fastlane: ${fastlaneInstalled ? 'Installed' : 'Not installed'}\n`;
+  status += `Maestro: ${maestroInstalled ? `Installed (${maestroService.getVersion()})` : 'Not installed'}\n`;
   status += `Output Directory: ${DEFAULT_OUTPUT_DIR}\n`;
+
+  if (maestroInstalled) {
+    const devices = maestroService.getBootedDevices();
+    status += `Running Simulators: ${devices.ios.length} iOS, ${devices.android.length} Android\n`;
+  }
 
   if (fs.existsSync(DEFAULT_OUTPUT_DIR)) {
     const files = fs.readdirSync(DEFAULT_OUTPUT_DIR);

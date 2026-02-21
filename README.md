@@ -21,6 +21,17 @@ Stop wasting time on Figma for app icons or manually resizing images for every s
 | `configure_model` | Choose AI model (speed vs quality) |
 | `get_status` | Check current configuration |
 
+### Maestro UI Testing & Store Screenshots
+
+| Tool | Description |
+|------|-------------|
+| `setup_maestro` | Install and configure Maestro CLI for mobile UI testing |
+| `maestro_screenshot` | Capture screenshot from running iOS Simulator / Android Emulator |
+| `maestro_run_flow` | Run UI test flows with natural language steps |
+| `maestro_run_yaml` | Run Maestro flows from raw YAML |
+| `maestro_store_screenshot` | Create professional store screenshots with AI-generated headlines + device frames |
+| `maestro_status` | Check Maestro installation and running devices |
+
 ## Quick Start
 
 ### 1. Install in Claude Code
@@ -228,6 +239,62 @@ Returns a detailed step-by-step guide customized with your project info:
 - Auto-detects framework (Expo, React Native, Flutter, Native)
 - Includes actual build commands for your framework
 
+### Maestro UI Testing
+
+Maestro is a mobile UI testing framework that lets you automate interactions with your app on simulators and emulators.
+
+#### Setup
+
+> "Set up Maestro for UI testing"
+
+This will check Java 17+ and install Maestro CLI automatically.
+
+#### Take a Screenshot
+
+> "Take a screenshot of my running app"
+
+Captures the current screen from the running iOS Simulator or Android Emulator.
+
+#### Run UI Test Flow
+
+> "Run a UI flow on com.myapp: launch the app, tap on 'Login', input 'test@email.com' into the email field, take a screenshot"
+
+Converts natural language steps into a Maestro flow and executes it. Available actions: `launchApp`, `tapOn`, `inputText`, `swipe`, `scroll`, `assertVisible`, `takeScreenshot`, `back`, `home`, and more.
+
+#### Create Store Marketing Screenshots
+
+> "Create a store screenshot with headline 'Your Photos, Perfectly Protected' using the screenshot at ~/screenshot.png for both iOS and Android"
+
+Or auto-capture from the running simulator:
+
+> "Create a store screenshot with headline 'Track Your Habits' for iOS"
+
+This:
+1. Captures a screenshot from the simulator (or uses the provided image)
+2. Uses Gemini AI to composite the screenshot with a headline and device frame
+3. Resizes to exact store dimensions for each platform
+
+**iOS Store Sizes:**
+
+| Device | Dimensions |
+|--------|-----------|
+| iPhone 6.7" (required) | 1290 x 2796 |
+| iPhone 6.5" (required) | 1284 x 2778 |
+| iPhone 5.5" (required) | 1242 x 2208 |
+| iPad 12.9" | 2048 x 2732 |
+
+**Android Store Sizes:**
+
+| Device | Dimensions |
+|--------|-----------|
+| Phone (required) | 1080 x 1920 |
+| Tablet 7" | 1200 x 1920 |
+| Tablet 10" | 1920 x 1200 |
+
+You can customize background color, text color, and select specific device sizes:
+
+> "Create a store screenshot with headline 'Beautiful Design' on black background with white text, for iPhone 6.7 and Phone only"
+
 ### Publish to Stores
 
 > "Publish my iOS app to the App Store. Project is at ~/myapp"
@@ -292,9 +359,11 @@ This MCP is designed for the vibe coding workflow - build your app with AI, then
 1. Build your app with Claude Code
 2. "Generate an icon for my app" → AI creates the icon
 3. "Resize it for iOS and Android" → All sizes generated
-4. "Generate store listing for my project" → All metadata ready
-5. "Show me the iOS publishing guide" → Step-by-step instructions
-6. "Set up fastlane and publish" → App goes to stores
+4. "Set up Maestro and take a screenshot of my app" → Live app capture
+5. "Create store screenshots with headline 'Your App, Reimagined'" → Marketing-ready images
+6. "Generate store listing for my project" → All metadata ready
+7. "Show me the iOS publishing guide" → Step-by-step instructions
+8. "Set up fastlane and publish" → App goes to stores
 ```
 
 No design skills needed. No Figma. No manual resizing. Just vibe and ship.
@@ -312,6 +381,22 @@ Install fastlane: `brew install fastlane` (macOS) or `gem install fastlane` (Rub
 
 ### Icon looks wrong at small sizes
 Try a simpler icon design. Complex designs don't work well at 20x20 or 29x29 pixels. Use bold shapes and minimal detail.
+
+### "Maestro not available"
+Maestro requires Java 17+. Install Java first, then run the `setup_maestro` tool:
+```bash
+brew install openjdk@17
+```
+
+### "No running simulator or emulator"
+Start an iOS Simulator or Android Emulator before using Maestro tools:
+```bash
+# iOS
+open -a Simulator
+
+# Android
+emulator -avd <avd_name>
+```
 
 ### MCP not connecting
 1. Restart Claude Code after adding the MCP server

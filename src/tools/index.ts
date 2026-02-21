@@ -13,3 +13,11 @@ export {
   handleGenerateStoreListing,
   handleGetPublishingGuide,
 } from './handlers.js';
+export {
+  handleSetupMaestro,
+  handleMaestroScreenshot,
+  handleMaestroRunFlow,
+  handleMaestroRunYaml,
+  handleMaestroStatus,
+  handleMaestroStoreScreenshot,
+} from './maestro-handlers.js';

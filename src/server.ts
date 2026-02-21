@@ -15,6 +15,12 @@ import {
   handleGetStatus,
   handleGenerateStoreListing,
   handleGetPublishingGuide,
+  handleSetupMaestro,
+  handleMaestroScreenshot,
+  handleMaestroRunFlow,
+  handleMaestroRunYaml,
+  handleMaestroStatus,
+  handleMaestroStoreScreenshot,
 } from './tools/index.js';
 
 export class AppPublisherServer {
@@ -23,7 +29,7 @@ export class AppPublisherServer {
   constructor() {
     this.server = new McpServer({
       name: 'app-publisher-mcp',
-      version: '1.0.0',
+      version: '1.2.0',
     });
 
     this.setupTools();
@@ -166,6 +172,103 @@ export class AppPublisherServer {
           .describe('App framework (auto-detected if projectDir is given). Options: expo, react-native, flutter, native'),
       },
       async (args) => handleGetPublishingGuide(args),
+    );
+
+    // Maestro UI Testing Tools
+
+    this.server.tool(
+      'setup_maestro',
+      'Install and configure Maestro CLI for mobile UI testing automation. Checks Java 17+ requirement and installs Maestro if not present. Run this first before using other maestro_* tools.',
+      {},
+      async () => handleSetupMaestro(),
+    );
+
+    this.server.tool(
+      'maestro_screenshot',
+      'Take a screenshot of the currently running app on iOS Simulator or Android Emulator using Maestro. Returns the screenshot image. Requires Maestro CLI and a running simulator/emulator.',
+      {
+        outputDir: z
+          .string()
+          .optional()
+          .describe('Output directory for screenshots (default: ~/app-publisher-assets/maestro)'),
+        filename: z
+          .string()
+          .optional()
+          .describe('Screenshot filename without extension (default: screenshot_<timestamp>)'),
+      },
+      async (args) => handleMaestroScreenshot(args),
+    );
+
+    this.server.tool(
+      'maestro_run_flow',
+      'Run a UI test flow on a simulator/emulator using Maestro. Accepts structured steps that are converted to a Maestro flow YAML. Use takeScreenshot steps to capture screenshots during the flow. Returns all captured screenshots as images.\n\nAvailable actions: launchApp, stopApp, clearState, tapOn, tapOnPoint, longPressOn, doubleTapOn, inputText, eraseText, swipe, scroll, scrollUntilVisible, back, home, pressKey, hideKeyboard, takeScreenshot, assertVisible, assertNotVisible, waitForAnimationToEnd, wait, openLink, copyTextFrom, pasteText, runScript',
+      {
+        appId: z.string().describe('App bundle identifier (e.g., com.calcvault.app)'),
+        steps: z
+          .array(
+            z.object({
+              action: z
+                .string()
+                .describe(
+                  'Maestro action: launchApp, tapOn, inputText, takeScreenshot, swipe, scroll, assertVisible, back, home, etc.',
+                ),
+              value: z
+                .string()
+                .optional()
+                .describe('Action value: text to tap, text to input, screenshot name, app ID for launchApp, etc.'),
+              direction: z
+                .string()
+                .optional()
+                .describe('Swipe direction: UP, DOWN, LEFT, RIGHT (for swipe action)'),
+              timeout: z
+                .number()
+                .optional()
+                .describe('Timeout in milliseconds (for assertVisible, wait actions)'),
+            }),
+          )
+          .describe('Array of flow steps to execute sequentially'),
+        outputDir: z
+          .string()
+          .optional()
+          .describe('Output directory for flow results and screenshots'),
+      },
+      async (args) => handleMaestroRunFlow(args),
+    );
+
+    this.server.tool(
+      'maestro_run_yaml',
+      'Run a Maestro flow from raw YAML content. For advanced users who want full control over the flow definition. Returns all captured screenshots as images.',
+      {
+        yaml: z.string().describe('Complete Maestro flow YAML content'),
+        outputDir: z
+          .string()
+          .optional()
+          .describe('Output directory for flow results and screenshots'),
+      },
+      async (args) => handleMaestroRunYaml(args),
+    );
+
+    this.server.tool(
+      'maestro_status',
+      'Check Maestro installation status, version, and list running iOS Simulators and Android Emulators.',
+      {},
+      async () => handleMaestroStatus(),
+    );
+
+    this.server.tool(
+      'maestro_store_screenshot',
+      'Create professional app store marketing screenshots with headline text and device-framed app screenshot. Uses Gemini AI to composite the image, then resizes to exact iOS/Android store dimensions. Can auto-capture screenshot from running simulator via Maestro, or accept an existing screenshot path.',
+      {
+        headline: z.string().describe('Marketing headline text to display above the app screenshot (e.g., "Your Photos, Perfectly Protected")'),
+        screenshotPath: z.string().optional().describe('Path to existing screenshot image. If not provided, automatically captures from running simulator via Maestro.'),
+        platform: z.enum(['ios', 'android', 'both']).optional().describe('Target platform for store screenshots (default: both)'),
+        backgroundColor: z.string().optional().describe('Background color hex code (default: #FFFFFF)'),
+        textColor: z.string().optional().describe('Headline text color hex code (default: #000000)'),
+        devices: z.array(z.string()).optional().describe('Specific device sizes to generate. Options: iPhone_6.7, iPhone_6.5, iPhone_5.5, iPad_12.9, Phone, Tablet_7, Tablet_10. Default: required sizes only.'),
+        model: z.string().optional().describe('Optional Gemini model override'),
+        outputDir: z.string().optional().describe('Output directory for store screenshots (default: ~/app-publisher-assets/maestro/store_<timestamp>)'),
+      },
+      async (args) => handleMaestroStoreScreenshot(args),
     );
   }
 
