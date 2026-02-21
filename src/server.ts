@@ -148,9 +148,9 @@ export class AppPublisherServer {
           .optional()
           .describe('Target platform: ios, android, or both (default: both)'),
         language: z
-          .enum(['ko', 'en'])
+          .enum(['ko', 'en', 'ja', 'zh'])
           .optional()
-          .describe('Output language: ko (Korean) or en (English). Default: ko'),
+          .describe('Output language: ko (Korean), en (English), ja (Japanese), or zh (Chinese). Default: ko'),
       },
       async (args) => handleGenerateStoreListing(args),
     );

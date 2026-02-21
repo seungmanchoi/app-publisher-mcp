@@ -15,7 +15,7 @@ Stop wasting time on Figma for app icons or manually resizing images for every s
 | `setup_fastlane` | Generate fastlane config for store publishing |
 | `publish_ios` | Publish to App Store via fastlane |
 | `publish_android` | Publish to Google Play via fastlane |
-| `generate_store_listing` | Auto-generate App Store / Google Play metadata from project |
+| `generate_store_listing` | Auto-generate store metadata + iOS age rating guide (4 languages) |
 | `get_publishing_guide` | Step-by-step publishing guide (iOS 12 steps / Android 7 steps) |
 | `configure_api_key` | Set your Gemini API key |
 | `configure_model` | Choose AI model (speed vs quality) |
@@ -211,13 +211,14 @@ This creates:
 
 > "Generate store listing metadata for my project at ~/myapp"
 
-Analyzes your project (package.json, app.json, README.md, etc.) and generates:
+Analyzes your project (package.json, app.json, README.md, CLAUDE.md, docs/) and generates:
 
 **iOS (App Store Connect):**
 - App name, subtitle, description, keywords
 - Category recommendation
 - Privacy policy content
 - Review notes for App Review team
+- **iOS Age Rating 7-Step Guide** - Auto-detects app capabilities (ads, UGC, chat, web access, gambling, health content, violence, etc.) and generates complete answers for all 7 steps of the App Store Connect age rating questionnaire
 
 **Android (Google Play Console):**
 - App title, short/full description
@@ -225,8 +226,13 @@ Analyzes your project (package.json, app.json, README.md, etc.) and generates:
 - Content rating guide
 - Privacy policy content
 
+**4 Languages Supported:**
+- Korean (ko), English (en), Japanese (ja), Chinese Simplified (zh)
+
 You can specify platform and language:
 > "Generate iOS store listing in Korean for ~/myapp"
+> "Generate store listing in Japanese for ~/myapp"
+> "Generate store listing in Chinese for ~/myapp"
 
 ### Get Publishing Guide
 

@@ -313,13 +313,85 @@ function extractProjectInfo(projectDir: string): IProjectInfo {
   const features: string[] = [];
   const allDocs = [readme, claudeMd, ...docsContent].filter(Boolean).join('\n');
 
-  // Extract feature-like lines (lines starting with - or * that contain keywords)
-  const featureLines = allDocs.match(/^[\s]*[-*]\s+.+/gm) ?? [];
-  for (const line of featureLines.slice(0, 30)) {
-    const cleaned = line.replace(/^[\s]*[-*]\s+/, '').trim();
-    if (cleaned.length > 5 && cleaned.length < 200) {
-      features.push(cleaned);
+  // Tech stack terms to filter out
+  const techStackTerms = [
+    'react native', 'expo', 'typescript', 'zustand', 'mmkv', 'nativewind',
+    'reanimated', 'expo-', 'react-native-', 'strict mode', 'i18next',
+    'file-based', 'state management', 'local storage', 'styling',
+    'animation framework', 'svg rendering', 'routing', 'tailwind',
+    'webpack', 'babel', 'eslint', 'prettier', 'jest', 'npm',
+    'node.js', 'fastlane', 'cocoapods', 'gradle', 'xcode',
+    'react-i18next', 'expo router', 'expo go', 'eas build',
+  ];
+
+  // Architecture terms to filter out
+  const archTerms = [
+    'fsd', 'feature-sliced', 'barrel export', 'dependency rule',
+    'upper layers', 'layered architecture', 'public api', 'index.ts',
+    'import', 'module structure', 'convention', 'alias',
+  ];
+
+  // Feature section headers to look for
+  const featureSectionPatterns = [
+    /^#{1,3}\s*(?:features|key features|main features|app features|주요\s*기능|기능|핵심\s*기능)/im,
+    /^(?:features|key features|주요\s*기능|기능)\s*$/im,
+  ];
+
+  // Try to extract features from specific "Features" sections first
+  let featureLines: string[] = [];
+  const docLines = allDocs.split('\n');
+
+  let inFeatureSection = false;
+  for (let i = 0; i < docLines.length; i++) {
+    const line = docLines[i];
+
+    // Check if entering a feature section
+    if (featureSectionPatterns.some((p) => p.test(line.trim()))) {
+      inFeatureSection = true;
+      continue;
     }
+
+    // Check if leaving the feature section (next header)
+    if (inFeatureSection && /^#{1,3}\s+\S/.test(line) && !featureSectionPatterns.some((p) => p.test(line.trim()))) {
+      inFeatureSection = false;
+      continue;
+    }
+
+    if (inFeatureSection) {
+      const match = line.match(/^[\s]*[-*]\s+(.+)/);
+      if (match) {
+        featureLines.push(match[1].trim());
+      }
+    }
+  }
+
+  // If no feature section found, fall back to general bullet extraction but still filter
+  if (featureLines.length === 0) {
+    const allBullets = allDocs.match(/^[\s]*[-*]\s+.+/gm) ?? [];
+    featureLines = allBullets.map((l) => l.replace(/^[\s]*[-*]\s+/, '').trim());
+  }
+
+  // Filter out tech stack and architecture lines
+  for (const line of featureLines.slice(0, 50)) {
+    const cleaned = line.replace(/^\*\*(.+?)\*\*.*/, '$1: ').replace(/^\*\*(.+?)\*\*/, '$1').trim();
+    if (cleaned.length <= 5 || cleaned.length >= 200) continue;
+
+    const lowerLine = cleaned.toLowerCase();
+
+    // Skip tech stack items
+    if (techStackTerms.some((term) => lowerLine.includes(term))) continue;
+
+    // Skip architecture items
+    if (archTerms.some((term) => lowerLine.includes(term))) continue;
+
+    // Skip lines that look like code/config references
+    if (/^[`"']/.test(cleaned) || /\.(ts|js|json|md|yaml|yml)/.test(cleaned)) continue;
+
+    // Skip lines that are primarily about dev tools or build systems
+    if (/^(framework|routing|state|storage|styling|animation|svg|sensors|i18n|typescript)\s*:/i.test(cleaned)) continue;
+
+    features.push(cleaned);
+    if (features.length >= 30) break;
   }
 
   // Extract dependencies
@@ -379,6 +451,62 @@ function extractProjectInfo(projectDir: string): IProjectInfo {
       d.includes('clerk'),
   );
 
+  // Detect WebView usage
+  const hasWebView = depNames.some(
+    (d) =>
+      d.includes('webview') ||
+      d.includes('web-view') ||
+      d.includes('browser'),
+  ) || allDocs.toLowerCase().includes('webview') || allDocs.toLowerCase().includes('web browser');
+
+  // Detect User Generated Content
+  const hasUGC = depNames.some(
+    (d) =>
+      d.includes('upload') ||
+      d.includes('share') ||
+      d.includes('social'),
+  ) || allDocs.toLowerCase().includes('user generated content') || allDocs.toLowerCase().includes('ugc');
+
+  // Detect Chat/Messaging
+  const hasChat = depNames.some(
+    (d) =>
+      d.includes('chat') ||
+      d.includes('messaging') ||
+      d.includes('socket.io') ||
+      d.includes('websocket') ||
+      d.includes('stream-chat') ||
+      d.includes('sendbird'),
+  );
+
+  // Detect Gambling
+  const hasGambling = allDocs.toLowerCase().includes('gambling') ||
+    allDocs.toLowerCase().includes('betting') ||
+    allDocs.toLowerCase().includes('casino');
+
+  // Detect Loot Box
+  const hasLootBox = allDocs.toLowerCase().includes('loot box') ||
+    allDocs.toLowerCase().includes('gacha') ||
+    allDocs.toLowerCase().includes('random box');
+
+  // Detect Health Content
+  const hasHealthContent = depNames.some(
+    (d) =>
+      d.includes('health') ||
+      d.includes('healthkit') ||
+      d.includes('fitness'),
+  ) || allDocs.toLowerCase().includes('medical') || allDocs.toLowerCase().includes('health');
+
+  // Detect Violent Content
+  const hasViolentContent = allDocs.toLowerCase().includes('violence') ||
+    allDocs.toLowerCase().includes('combat') ||
+    allDocs.toLowerCase().includes('shooting') ||
+    allDocs.toLowerCase().includes('weapon');
+
+  // Detect Sexual Content
+  const hasSexualContent = allDocs.toLowerCase().includes('sexual') ||
+    allDocs.toLowerCase().includes('adult content') ||
+    allDocs.toLowerCase().includes('nudity');
+
   // Extract team ID
   const teamId = (expoConfig?.ios as Record<string, unknown> | undefined)?.appleTeamId as
     | string
@@ -396,55 +524,101 @@ function extractProjectInfo(projectDir: string): IProjectInfo {
     hasAnalytics,
     hasInAppPurchase,
     hasUserAuth,
+    hasWebView,
+    hasUGC,
+    hasChat,
+    hasGambling,
+    hasLootBox,
+    hasHealthContent,
+    hasViolentContent,
+    hasSexualContent,
     teamId,
     dependencies: depNames,
   };
 }
 
 function generateIOSListing(info: IProjectInfo, lang: TLanguage): string {
-  const isKo = lang === 'ko';
-
   const appNameTruncated = info.appName.substring(0, 30);
 
   // Generate subtitle
-  const subtitle = isKo
-    ? generateSubtitleKo(info).substring(0, 30)
-    : generateSubtitleEn(info).substring(0, 30);
+  const subtitle = (() => {
+    switch (lang) {
+      case 'ko': return generateSubtitleKo(info).substring(0, 30);
+      case 'en': return generateSubtitleEn(info).substring(0, 30);
+      case 'ja': return generateSubtitleJa(info).substring(0, 30);
+      case 'zh': return generateSubtitleZh(info).substring(0, 30);
+    }
+  })();
 
   // Generate description
-  const description = isKo
-    ? generateDescriptionKo(info, 4000)
-    : generateDescriptionEn(info, 4000);
+  const description = (() => {
+    switch (lang) {
+      case 'ko': return generateDescriptionKo(info, 4000);
+      case 'en': return generateDescriptionEn(info, 4000);
+      case 'ja': return generateDescriptionJa(info, 4000);
+      case 'zh': return generateDescriptionZh(info, 4000);
+    }
+  })();
 
   // Generate keywords
-  const keywords = isKo
-    ? generateKeywordsKo(info).substring(0, 100)
-    : generateKeywordsEn(info).substring(0, 100);
+  const keywords = (() => {
+    switch (lang) {
+      case 'ko': return generateKeywordsKo(info).substring(0, 100);
+      case 'en': return generateKeywordsEn(info).substring(0, 100);
+      case 'ja': return generateKeywordsJa(info).substring(0, 100);
+      case 'zh': return generateKeywordsZh(info).substring(0, 100);
+    }
+  })();
 
   // What's New
-  const whatsNew = isKo
-    ? `v${info.version} 업데이트:\n- 성능 개선 및 버그 수정\n- 사용자 경험 향상`
-    : `v${info.version} Update:\n- Performance improvements and bug fixes\n- Enhanced user experience`;
+  const whatsNew = (() => {
+    switch (lang) {
+      case 'ko': return `v${info.version} 업데이트:\n- 성능 개선 및 버그 수정\n- 사용자 경험 향상`;
+      case 'en': return `v${info.version} Update:\n- Performance improvements and bug fixes\n- Enhanced user experience`;
+      case 'ja': return `v${info.version} アップデート:\n- パフォーマンス改善およびバグ修正\n- ユーザー体験の向上`;
+      case 'zh': return `v${info.version} 更新:\n- 性能改进及错误修复\n- 用户体验提升`;
+    }
+  })();
 
   // Category
-  const category = isKo
-    ? suggestCategoryKo(info)
-    : suggestCategoryEn(info);
+  const category = (() => {
+    switch (lang) {
+      case 'ko': return suggestCategoryKo(info);
+      case 'en': return suggestCategoryEn(info);
+      case 'ja': return suggestCategoryJa(info);
+      case 'zh': return suggestCategoryZh(info);
+    }
+  })();
 
   // Support URL content
-  const supportContent = isKo
-    ? generateSupportPageKo(info)
-    : generateSupportPageEn(info);
+  const supportContent = (() => {
+    switch (lang) {
+      case 'ko': return generateSupportPageKo(info);
+      case 'en': return generateSupportPageEn(info);
+      case 'ja': return generateSupportPageJa(info);
+      case 'zh': return generateSupportPageZh(info);
+    }
+  })();
 
   // Privacy policy
-  const privacyPolicy = isKo
-    ? generatePrivacyPolicyKo(info)
-    : generatePrivacyPolicyEn(info);
+  const privacyPolicy = (() => {
+    switch (lang) {
+      case 'ko': return generatePrivacyPolicyKo(info);
+      case 'en': return generatePrivacyPolicyEn(info);
+      case 'ja': return generatePrivacyPolicyJa(info);
+      case 'zh': return generatePrivacyPolicyZh(info);
+    }
+  })();
 
   // Review notes
-  const reviewNotes = isKo
-    ? generateReviewNotesKo(info)
-    : generateReviewNotesEn(info);
+  const reviewNotes = (() => {
+    switch (lang) {
+      case 'ko': return generateReviewNotesKo(info);
+      case 'en': return generateReviewNotesEn(info);
+      case 'ja': return generateReviewNotesJa(info);
+      case 'zh': return generateReviewNotesZh(info);
+    }
+  })();
 
   let output = '';
   output += `=== iOS App Store Connect 등록 정보 ===\n\n`;
@@ -484,34 +658,57 @@ function generateIOSListing(info: IProjectInfo, lang: TLanguage): string {
 }
 
 function generateAndroidListing(info: IProjectInfo, lang: TLanguage): string {
-  const isKo = lang === 'ko';
-
   const appTitle = info.appName.substring(0, 30);
 
   // Short description
-  const shortDesc = isKo
-    ? generateShortDescKo(info).substring(0, 80)
-    : generateShortDescEn(info).substring(0, 80);
+  const shortDesc = (() => {
+    switch (lang) {
+      case 'ko': return generateShortDescKo(info).substring(0, 80);
+      case 'en': return generateShortDescEn(info).substring(0, 80);
+      case 'ja': return generateShortDescJa(info).substring(0, 80);
+      case 'zh': return generateShortDescZh(info).substring(0, 80);
+    }
+  })();
 
   // Full description
-  const fullDesc = isKo
-    ? generateDescriptionKo(info, 4000)
-    : generateDescriptionEn(info, 4000);
+  const fullDesc = (() => {
+    switch (lang) {
+      case 'ko': return generateDescriptionKo(info, 4000);
+      case 'en': return generateDescriptionEn(info, 4000);
+      case 'ja': return generateDescriptionJa(info, 4000);
+      case 'zh': return generateDescriptionZh(info, 4000);
+    }
+  })();
 
   // Category
-  const category = isKo
-    ? suggestCategoryKo(info)
-    : suggestCategoryEn(info);
+  const category = (() => {
+    switch (lang) {
+      case 'ko': return suggestCategoryKo(info);
+      case 'en': return suggestCategoryEn(info);
+      case 'ja': return suggestCategoryJa(info);
+      case 'zh': return suggestCategoryZh(info);
+    }
+  })();
 
   // Content rating guide
-  const contentRating = isKo
-    ? generateContentRatingGuideKo(info)
-    : generateContentRatingGuideEn(info);
+  const contentRating = (() => {
+    switch (lang) {
+      case 'ko': return generateContentRatingGuideKo(info);
+      case 'en': return generateContentRatingGuideEn(info);
+      case 'ja': return generateContentRatingGuideJa(info);
+      case 'zh': return generateContentRatingGuideZh(info);
+    }
+  })();
 
   // Privacy policy
-  const privacyPolicy = isKo
-    ? generatePrivacyPolicyKo(info)
-    : generatePrivacyPolicyEn(info);
+  const privacyPolicy = (() => {
+    switch (lang) {
+      case 'ko': return generatePrivacyPolicyKo(info);
+      case 'en': return generatePrivacyPolicyEn(info);
+      case 'ja': return generatePrivacyPolicyJa(info);
+      case 'zh': return generatePrivacyPolicyZh(info);
+    }
+  })();
 
   let output = '';
   output += `=== Google Play Console 등록 정보 ===\n\n`;
@@ -747,6 +944,26 @@ function suggestCategoryKo(info: IProjectInfo): string {
       primary: '뉴스 (News)',
       secondary: '매거진 및 신문 (Magazines & Newspapers)',
     },
+    {
+      keywords: ['utility', '유틸리티', 'tool', '도구', 'calculator', '계산기'],
+      primary: '유틸리티 (Utilities)',
+      secondary: '라이프스타일 (Lifestyle)',
+    },
+    {
+      keywords: ['lifestyle', '라이프스타일', 'life', '생활'],
+      primary: '라이프스타일 (Lifestyle)',
+      secondary: '유틸리티 (Utilities)',
+    },
+    {
+      keywords: ['entertainment', '엔터테인먼트', '오락', 'fun', 'led', 'banner', 'neon', 'display'],
+      primary: '엔터테인먼트 (Entertainment)',
+      secondary: '라이프스타일 (Lifestyle)',
+    },
+    {
+      keywords: ['business', '비즈니스', '사업', 'enterprise'],
+      primary: '비즈니스 (Business)',
+      secondary: '생산성 (Productivity)',
+    },
   ];
 
   for (const mapping of categoryMap) {
@@ -786,6 +1003,14 @@ function suggestCategoryEn(info: IProjectInfo): string {
     { keywords: ['travel', 'map', 'navigation', 'trip'], primary: 'Travel', secondary: 'Navigation' },
     { keywords: ['food', 'recipe', 'cook', 'restaurant'], primary: 'Food & Drink', secondary: 'Lifestyle' },
     { keywords: ['news', 'article', 'magazine', 'read'], primary: 'News', secondary: 'Magazines & Newspapers' },
+    { keywords: ['utility', 'tool', 'calculator'], primary: 'Utilities', secondary: 'Lifestyle' },
+    { keywords: ['lifestyle', 'life'], primary: 'Lifestyle', secondary: 'Utilities' },
+    {
+      keywords: ['entertainment', 'fun', 'led', 'banner', 'neon', 'display'],
+      primary: 'Entertainment',
+      secondary: 'Lifestyle',
+    },
+    { keywords: ['business', 'enterprise'], primary: 'Business', secondary: 'Productivity' },
   ];
 
   for (const mapping of categoryMap) {
@@ -1093,6 +1318,793 @@ function generateContentRatingGuideEn(info: IProjectInfo): string {
   return guide;
 }
 
+// ============================================================
+// Japanese (ja) Generation Functions
+// ============================================================
+
+function generateSubtitleJa(info: IProjectInfo): string {
+  if (info.features.length > 0) {
+    const first = info.features[0];
+    if (first.length <= 30) return first;
+  }
+  if (info.description && info.description.length <= 30) return info.description;
+  return `${info.appName} - 最高のアプリ`.substring(0, 30);
+}
+
+function generateShortDescJa(info: IProjectInfo): string {
+  if (info.description && info.description.length <= 80) return info.description;
+  const featureSummary = info.features.slice(0, 3).join('、');
+  if (featureSummary && featureSummary.length <= 80) return featureSummary;
+  return `${info.appName}でより良い体験を始めましょう。`.substring(0, 80);
+}
+
+function generateDescriptionJa(info: IProjectInfo, maxLength: number): string {
+  let desc = '';
+
+  desc += `${info.appName}をご紹介します！\n\n`;
+
+  if (info.description) {
+    desc += `${info.description}\n\n`;
+  }
+
+  if (info.features.length > 0) {
+    desc += `主な機能：\n`;
+    for (const feature of info.features.slice(0, 10)) {
+      desc += `- ${feature}\n`;
+    }
+    desc += `\n`;
+  }
+
+  desc += `アプリ情報：\n`;
+  desc += `- バージョン: ${info.version}\n`;
+
+  if (info.framework === 'expo' || info.framework === 'react-native') {
+    desc += `- クロスプラットフォーム対応 (iOS/Android)\n`;
+  }
+
+  if (info.hasAds) {
+    desc += `\nこのアプリには広告が含まれています。\n`;
+  }
+
+  if (info.hasInAppPurchase) {
+    desc += `このアプリにはアプリ内課金が含まれています。\n`;
+  }
+
+  desc += `\nご質問がございましたら、アプリ内のサポートページからお問い合わせください。\n`;
+
+  return desc.substring(0, maxLength);
+}
+
+function generateKeywordsJa(info: IProjectInfo): string {
+  const keywords: string[] = [];
+
+  const nameWords = info.appName.split(/[\s-_]+/).filter((w) => w.length > 1);
+  keywords.push(...nameWords);
+
+  for (const feature of info.features.slice(0, 5)) {
+    const words = feature
+      .split(/[\s,.\-_()、]+/)
+      .filter((w) => w.length > 1 && w.length < 15);
+    keywords.push(...words.slice(0, 3));
+  }
+
+  const unique = [...new Set(keywords)];
+  return unique.join(',').substring(0, 100);
+}
+
+function suggestCategoryJa(info: IProjectInfo): string {
+  const allText = [info.description, ...info.features].join(' ').toLowerCase();
+
+  const categoryMap: Array<{ keywords: string[]; primary: string; secondary: string }> = [
+    {
+      keywords: ['学習', 'learn', 'education', '教育', '単語', 'word', 'vocabulary', '勉強', 'study', 'quiz'],
+      primary: '教育 (Education)',
+      secondary: '辞書/辞典 (Reference)',
+    },
+    {
+      keywords: ['game', 'ゲーム', 'play', 'puzzle', 'adventure'],
+      primary: 'ゲーム (Games)',
+      secondary: 'エンターテインメント (Entertainment)',
+    },
+    {
+      keywords: ['health', '健康', 'fitness', '運動', 'workout', 'diet', 'フィットネス'],
+      primary: 'ヘルス＆フィットネス (Health & Fitness)',
+      secondary: 'ライフスタイル (Lifestyle)',
+    },
+    {
+      keywords: ['shop', 'ショッピング', 'store', 'buy', 'purchase', 'commerce', '買い物'],
+      primary: 'ショッピング (Shopping)',
+      secondary: 'ライフスタイル (Lifestyle)',
+    },
+    {
+      keywords: ['social', 'ソーシャル', 'chat', 'message', 'community', 'コミュニティ', 'sns'],
+      primary: 'ソーシャル (Social Networking)',
+      secondary: 'エンターテインメント (Entertainment)',
+    },
+    {
+      keywords: ['photo', '写真', 'camera', 'video', '動画', 'edit', 'ビデオ'],
+      primary: '写真＆ビデオ (Photo & Video)',
+      secondary: 'エンターテインメント (Entertainment)',
+    },
+    {
+      keywords: ['music', '音楽', 'audio', 'sound', 'podcast', 'ミュージック'],
+      primary: 'ミュージック (Music)',
+      secondary: 'エンターテインメント (Entertainment)',
+    },
+    {
+      keywords: ['finance', '金融', 'money', 'bank', 'budget', '家計簿', 'expense'],
+      primary: 'ファイナンス (Finance)',
+      secondary: 'ビジネス (Business)',
+    },
+    {
+      keywords: ['productivity', '生産性', 'task', 'todo', 'note', 'メモ', 'calendar', '仕事'],
+      primary: '仕事効率化 (Productivity)',
+      secondary: 'ビジネス (Business)',
+    },
+    {
+      keywords: ['travel', '旅行', 'map', '地図', 'navigation', 'trip'],
+      primary: '旅行 (Travel)',
+      secondary: 'ナビゲーション (Navigation)',
+    },
+    {
+      keywords: ['food', '食べ物', 'recipe', 'レシピ', 'cook', 'restaurant', 'グルメ', '料理'],
+      primary: 'フード＆ドリンク (Food & Drink)',
+      secondary: 'ライフスタイル (Lifestyle)',
+    },
+    {
+      keywords: ['news', 'ニュース', 'article', 'magazine', 'read'],
+      primary: 'ニュース (News)',
+      secondary: '雑誌/新聞 (Magazines & Newspapers)',
+    },
+    {
+      keywords: ['utility', 'ユーティリティ', 'tool', 'ツール', 'calculator', '計算'],
+      primary: 'ユーティリティ (Utilities)',
+      secondary: 'ライフスタイル (Lifestyle)',
+    },
+    {
+      keywords: ['lifestyle', 'ライフスタイル', 'life', '生活'],
+      primary: 'ライフスタイル (Lifestyle)',
+      secondary: 'ユーティリティ (Utilities)',
+    },
+    {
+      keywords: ['entertainment', 'エンターテインメント', '娯楽', 'fun', 'led', 'banner', 'neon', 'display'],
+      primary: 'エンターテインメント (Entertainment)',
+      secondary: 'ライフスタイル (Lifestyle)',
+    },
+    {
+      keywords: ['business', 'ビジネス', '仕事', 'enterprise'],
+      primary: 'ビジネス (Business)',
+      secondary: '仕事効率化 (Productivity)',
+    },
+  ];
+
+  for (const mapping of categoryMap) {
+    if (mapping.keywords.some((kw) => allText.includes(kw))) {
+      return `基本カテゴリ: ${mapping.primary}\n補助カテゴリ: ${mapping.secondary}`;
+    }
+  }
+
+  return `基本カテゴリ: ユーティリティ (Utilities)\n補助カテゴリ: ライフスタイル (Lifestyle)`;
+}
+
+function generateSupportPageJa(info: IProjectInfo): string {
+  let content = '';
+  content += `${info.appName} カスタマーサポート\n\n`;
+  content += `アプリの使用中に問題が発生した場合や、サポートが必要な場合は、以下の方法でお問い合わせください。\n\n`;
+  content += `お問い合わせ方法:\n`;
+  content += `- メール: support@example.com（実際のメールアドレスに変更してください）\n`;
+  content += `- 応答時間: 営業日基準1〜2日以内\n\n`;
+  content += `よくある質問 (FAQ):\n\n`;
+  content += `Q: アプリが正常に動作しません。\n`;
+  content += `A: アプリを最新バージョンにアップデートしてから再度お試しください。問題が解決しない場合は、アプリを削除して再インストールしてください。\n\n`;
+  content += `Q: データが消えてしまいました。\n`;
+  content += `A: アプリデータはデバイスにローカル保存されています。アプリを削除するとデータがリセットされる場合があります。\n\n`;
+  content += `現在のバージョン: ${info.version}\n`;
+  return content;
+}
+
+function generatePrivacyPolicyJa(info: IProjectInfo): string {
+  let policy = '';
+  policy += `プライバシーポリシー\n\n`;
+  policy += `最終更新日: ${new Date().toISOString().split('T')[0]}\n\n`;
+  policy += `${info.appName}（以下「本アプリ」）は、ユーザーのプライバシーを重視しています。\n`;
+  policy += `本プライバシーポリシーは、本アプリが収集する情報とその利用方法について説明します。\n\n`;
+
+  policy += `1. 収集する情報\n\n`;
+
+  const collectedData: string[] = [];
+
+  if (info.hasUserAuth) {
+    collectedData.push('- アカウント情報: メールアドレス、ユーザー名（会員登録時）');
+  }
+
+  if (info.hasAnalytics) {
+    collectedData.push('- 利用データ: アプリ使用パターン、画面閲覧履歴（サービス改善目的）');
+    collectedData.push('- デバイス情報: デバイスモデル、OSバージョン、アプリバージョン');
+  }
+
+  if (info.hasAds) {
+    collectedData.push('- 広告識別子: カスタマイズ広告配信のための広告ID（IDFA/GAID）');
+  }
+
+  if (collectedData.length === 0) {
+    policy += `本アプリは個人情報を収集しません。すべてのデータはユーザーのデバイスにローカル保存され、外部サーバーには送信されません。\n\n`;
+  } else {
+    for (const item of collectedData) {
+      policy += `${item}\n`;
+    }
+    policy += `\n`;
+  }
+
+  policy += `2. 情報の利用目的\n\n`;
+  policy += `収集した情報は以下の目的で使用されます:\n`;
+  policy += `- アプリサービスの提供および維持管理\n`;
+  if (info.hasAnalytics) {
+    policy += `- アプリ使用分析およびサービス改善\n`;
+  }
+  if (info.hasAds) {
+    policy += `- カスタマイズ広告の配信\n`;
+  }
+  policy += `\n`;
+
+  policy += `3. 情報の共有\n\n`;
+  policy += `本アプリは、法的要求がある場合を除き、ユーザーの個人情報を第三者に販売または共有することはありません。\n`;
+  if (info.hasAds) {
+    policy += `ただし、広告パートナー（Google AdMob等）と広告識別子が共有される場合があります。\n`;
+  }
+  policy += `\n`;
+
+  policy += `4. データセキュリティ\n\n`;
+  policy += `ユーザーのデータを保護するために、適切な技術的・管理的セキュリティ対策を講じています。\n\n`;
+
+  policy += `5. お子様のプライバシー\n\n`;
+  policy += `本アプリは、13歳未満のお子様の個人情報を意図的に収集することはありません。\n\n`;
+
+  policy += `6. お問い合わせ\n\n`;
+  policy += `プライバシーポリシーに関するお問い合わせは、support@example.com（実際のメールアドレスに変更してください）までご連絡ください。\n`;
+
+  return policy;
+}
+
+function generateReviewNotesJa(info: IProjectInfo): string {
+  let notes = '';
+  notes += `審査メモ：\n\n`;
+  notes += `アプリ名: ${info.appName}\n`;
+  notes += `バンドルID: ${info.bundleId}\n`;
+  notes += `バージョン: ${info.version}\n`;
+  notes += `フレームワーク: ${info.framework}\n\n`;
+
+  if (!info.hasUserAuth) {
+    notes += `- このアプリはログイン不要で使用できます。テストアカウントは必要ありません。\n`;
+  } else {
+    notes += `- テストアカウント:\n`;
+    notes += `  メール: test@example.com（実際のテストアカウントに変更してください）\n`;
+    notes += `  パスワード: testpassword（実際のパスワードに変更してください）\n`;
+  }
+
+  if (info.hasAds) {
+    notes += `- このアプリにはGoogle AdMobによる広告が含まれています。\n`;
+  }
+
+  if (info.hasInAppPurchase) {
+    notes += `- このアプリにはアプリ内課金が含まれています。\n`;
+  }
+
+  notes += `\nすべての機能はネットワーク接続なしでも基本的に使用可能です。\n`;
+  notes += `（実際のアプリ要件に合わせて修正してください）\n`;
+
+  return notes;
+}
+
+function generateContentRatingGuideJa(info: IProjectInfo): string {
+  let guide = '';
+  guide += `Google Play コンテンツレーティングガイド：\n\n`;
+  guide += `Google Play Console > アプリのコンテンツ > コンテンツレーティング でアンケートを完了してください。\n\n`;
+  guide += `以下の項目に回答が必要です:\n\n`;
+
+  guide += `1. 暴力性: `;
+  guide += `なし（該当しない場合）\n`;
+
+  guide += `2. 性的コンテンツ: `;
+  guide += `なし（該当しない場合）\n`;
+
+  guide += `3. 言語: `;
+  guide += `軽度（一般的なテキストを含む場合）\n`;
+
+  guide += `4. 薬物/アルコール/タバコ: `;
+  guide += `なし（該当しない場合）\n`;
+
+  if (info.hasAds) {
+    guide += `5. 広告: はい - アプリに広告が含まれています\n`;
+  } else {
+    guide += `5. 広告: いいえ\n`;
+  }
+
+  if (info.hasInAppPurchase) {
+    guide += `6. アプリ内課金: はい - デジタル商品の購入が可能です\n`;
+  } else {
+    guide += `6. アプリ内課金: いいえ\n`;
+  }
+
+  if (info.hasUserAuth) {
+    guide += `7. ユーザー生成コンテンツ: 確認が必要（ユーザー間の対話の有無）\n`;
+  } else {
+    guide += `7. ユーザー生成コンテンツ: いいえ\n`;
+  }
+
+  guide += `\n予想レーティング: 全ユーザー対象 (Everyone) または 12歳以上 (Everyone 12+)\n`;
+  guide += `（実際のアプリコンテンツにより異なる場合があります）\n`;
+
+  return guide;
+}
+
+// ============================================================
+// Chinese (zh) Generation Functions
+// ============================================================
+
+function generateSubtitleZh(info: IProjectInfo): string {
+  if (info.features.length > 0) {
+    const first = info.features[0];
+    if (first.length <= 30) return first;
+  }
+  if (info.description && info.description.length <= 30) return info.description;
+  return `${info.appName} - 最佳应用`.substring(0, 30);
+}
+
+function generateShortDescZh(info: IProjectInfo): string {
+  if (info.description && info.description.length <= 80) return info.description;
+  const featureSummary = info.features.slice(0, 3).join('、');
+  if (featureSummary && featureSummary.length <= 80) return featureSummary;
+  return `使用${info.appName}开启更好的体验。`.substring(0, 80);
+}
+
+function generateDescriptionZh(info: IProjectInfo, maxLength: number): string {
+  let desc = '';
+
+  desc += `${info.appName}隆重登场！\n\n`;
+
+  if (info.description) {
+    desc += `${info.description}\n\n`;
+  }
+
+  if (info.features.length > 0) {
+    desc += `主要功能：\n`;
+    for (const feature of info.features.slice(0, 10)) {
+      desc += `- ${feature}\n`;
+    }
+    desc += `\n`;
+  }
+
+  desc += `应用信息：\n`;
+  desc += `- 版本: ${info.version}\n`;
+
+  if (info.framework === 'expo' || info.framework === 'react-native') {
+    desc += `- 跨平台支持 (iOS/Android)\n`;
+  }
+
+  if (info.hasAds) {
+    desc += `\n此应用包含广告。\n`;
+  }
+
+  if (info.hasInAppPurchase) {
+    desc += `此应用包含应用内购买。\n`;
+  }
+
+  desc += `\n如有任何问题，请通过应用内的支持页面与我们联系。\n`;
+
+  return desc.substring(0, maxLength);
+}
+
+function generateKeywordsZh(info: IProjectInfo): string {
+  const keywords: string[] = [];
+
+  const nameWords = info.appName.split(/[\s-_]+/).filter((w) => w.length > 1);
+  keywords.push(...nameWords);
+
+  for (const feature of info.features.slice(0, 5)) {
+    const words = feature
+      .split(/[\s,.\-_()、]+/)
+      .filter((w) => w.length > 1 && w.length < 15);
+    keywords.push(...words.slice(0, 3));
+  }
+
+  const unique = [...new Set(keywords)];
+  return unique.join(',').substring(0, 100);
+}
+
+function suggestCategoryZh(info: IProjectInfo): string {
+  const allText = [info.description, ...info.features].join(' ').toLowerCase();
+
+  const categoryMap: Array<{ keywords: string[]; primary: string; secondary: string }> = [
+    {
+      keywords: ['学习', 'learn', 'education', '教育', '单词', 'word', 'vocabulary', '学', 'study', 'quiz'],
+      primary: '教育 (Education)',
+      secondary: '参考 (Reference)',
+    },
+    {
+      keywords: ['game', '游戏', 'play', 'puzzle', 'adventure'],
+      primary: '游戏 (Games)',
+      secondary: '娱乐 (Entertainment)',
+    },
+    {
+      keywords: ['health', '健康', 'fitness', '运动', 'workout', 'diet', '健身'],
+      primary: '健康健美 (Health & Fitness)',
+      secondary: '生活 (Lifestyle)',
+    },
+    {
+      keywords: ['shop', '购物', 'store', 'buy', 'purchase', 'commerce', '商店'],
+      primary: '购物 (Shopping)',
+      secondary: '生活 (Lifestyle)',
+    },
+    {
+      keywords: ['social', '社交', 'chat', 'message', 'community', '社区'],
+      primary: '社交 (Social Networking)',
+      secondary: '娱乐 (Entertainment)',
+    },
+    {
+      keywords: ['photo', '照片', 'camera', 'video', '视频', 'edit'],
+      primary: '照片与视频 (Photo & Video)',
+      secondary: '娱乐 (Entertainment)',
+    },
+    {
+      keywords: ['music', '音乐', 'audio', 'sound', 'podcast'],
+      primary: '音乐 (Music)',
+      secondary: '娱乐 (Entertainment)',
+    },
+    {
+      keywords: ['finance', '金融', 'money', 'bank', 'budget', '记账', 'expense', '财务'],
+      primary: '财务 (Finance)',
+      secondary: '商务 (Business)',
+    },
+    {
+      keywords: ['productivity', '生产力', 'task', 'todo', 'note', '备忘录', 'calendar', '效率'],
+      primary: '效率 (Productivity)',
+      secondary: '商务 (Business)',
+    },
+    {
+      keywords: ['travel', '旅行', 'map', '地图', 'navigation', 'trip', '旅游'],
+      primary: '旅行 (Travel)',
+      secondary: '导航 (Navigation)',
+    },
+    {
+      keywords: ['food', '美食', 'recipe', '食谱', 'cook', 'restaurant', '餐厅', '料理'],
+      primary: '美食佳饮 (Food & Drink)',
+      secondary: '生活 (Lifestyle)',
+    },
+    {
+      keywords: ['news', '新闻', 'article', 'magazine', 'read'],
+      primary: '新闻 (News)',
+      secondary: '杂志和报纸 (Magazines & Newspapers)',
+    },
+    {
+      keywords: ['utility', '工具', 'tool', 'calculator', '计算'],
+      primary: '工具 (Utilities)',
+      secondary: '生活 (Lifestyle)',
+    },
+    {
+      keywords: ['lifestyle', '生活', 'life'],
+      primary: '生活 (Lifestyle)',
+      secondary: '工具 (Utilities)',
+    },
+    {
+      keywords: ['entertainment', '娱乐', 'fun', 'led', 'banner', 'neon', 'display'],
+      primary: '娱乐 (Entertainment)',
+      secondary: '生活 (Lifestyle)',
+    },
+    {
+      keywords: ['business', '商务', '商业', 'enterprise'],
+      primary: '商务 (Business)',
+      secondary: '效率 (Productivity)',
+    },
+  ];
+
+  for (const mapping of categoryMap) {
+    if (mapping.keywords.some((kw) => allText.includes(kw))) {
+      return `基本分类: ${mapping.primary}\n辅助分类: ${mapping.secondary}`;
+    }
+  }
+
+  return `基本分类: 工具 (Utilities)\n辅助分类: 生活 (Lifestyle)`;
+}
+
+function generateSupportPageZh(info: IProjectInfo): string {
+  let content = '';
+  content += `${info.appName} 客户支持\n\n`;
+  content += `如果您在使用应用时遇到问题或需要帮助，请通过以下方式联系我们。\n\n`;
+  content += `联系方式:\n`;
+  content += `- 邮箱: support@example.com（请替换为实际邮箱地址）\n`;
+  content += `- 响应时间: 1-2个工作日内\n\n`;
+  content += `常见问题 (FAQ):\n\n`;
+  content += `Q: 应用无法正常运行。\n`;
+  content += `A: 请将应用更新到最新版本后重试。如果问题仍然存在，请删除并重新安装应用。\n\n`;
+  content += `Q: 数据丢失了。\n`;
+  content += `A: 应用数据存储在您的设备本地。删除应用可能会导致数据重置。\n\n`;
+  content += `当前版本: ${info.version}\n`;
+  return content;
+}
+
+function generatePrivacyPolicyZh(info: IProjectInfo): string {
+  let policy = '';
+  policy += `隐私政策\n\n`;
+  policy += `最后更新日期：${new Date().toISOString().split('T')[0]}\n\n`;
+  policy += `${info.appName}（以下简称"本应用"）重视用户的隐私保护。\n`;
+  policy += `本隐私政策说明了本应用收集的信息及其使用方式。\n\n`;
+
+  policy += `1. 收集的信息\n\n`;
+
+  const collectedData: string[] = [];
+
+  if (info.hasUserAuth) {
+    collectedData.push('- 账户信息: 电子邮箱、用户名（注册时）');
+  }
+
+  if (info.hasAnalytics) {
+    collectedData.push('- 使用数据: 应用使用模式、页面浏览记录（用于服务改进）');
+    collectedData.push('- 设备信息: 设备型号、操作系统版本、应用版本');
+  }
+
+  if (info.hasAds) {
+    collectedData.push('- 广告标识符: 用于个性化广告的广告ID（IDFA/GAID）');
+  }
+
+  if (collectedData.length === 0) {
+    policy += `本应用不收集个人信息。所有数据均存储在用户设备本地，不会传输到外部服务器。\n\n`;
+  } else {
+    for (const item of collectedData) {
+      policy += `${item}\n`;
+    }
+    policy += `\n`;
+  }
+
+  policy += `2. 信息使用目的\n\n`;
+  policy += `收集的信息用于以下目的:\n`;
+  policy += `- 提供和维护应用服务\n`;
+  if (info.hasAnalytics) {
+    policy += `- 分析应用使用情况并改进服务\n`;
+  }
+  if (info.hasAds) {
+    policy += `- 提供个性化广告\n`;
+  }
+  policy += `\n`;
+
+  policy += `3. 信息共享\n\n`;
+  policy += `除法律要求外，本应用不会向第三方出售或共享用户的个人信息。\n`;
+  if (info.hasAds) {
+    policy += `但广告标识符可能会与广告合作伙伴（如Google AdMob）共享。\n`;
+  }
+  policy += `\n`;
+
+  policy += `4. 数据安全\n\n`;
+  policy += `我们采取适当的技术和管理安全措施来保护用户数据。\n\n`;
+
+  policy += `5. 儿童隐私\n\n`;
+  policy += `本应用不会故意收集13岁以下儿童的个人信息。\n\n`;
+
+  policy += `6. 联系我们\n\n`;
+  policy += `如对隐私政策有任何疑问，请通过 support@example.com（请替换为实际邮箱地址）与我们联系。\n`;
+
+  return policy;
+}
+
+function generateReviewNotesZh(info: IProjectInfo): string {
+  let notes = '';
+  notes += `审核备注：\n\n`;
+  notes += `应用名称: ${info.appName}\n`;
+  notes += `Bundle ID: ${info.bundleId}\n`;
+  notes += `版本: ${info.version}\n`;
+  notes += `框架: ${info.framework}\n\n`;
+
+  if (!info.hasUserAuth) {
+    notes += `- 此应用无需登录即可使用。不需要测试账号。\n`;
+  } else {
+    notes += `- 测试账号:\n`;
+    notes += `  邮箱: test@example.com（请替换为实际测试账号）\n`;
+    notes += `  密码: testpassword（请替换为实际密码）\n`;
+  }
+
+  if (info.hasAds) {
+    notes += `- 此应用包含通过Google AdMob提供的广告。\n`;
+  }
+
+  if (info.hasInAppPurchase) {
+    notes += `- 此应用包含应用内购买。\n`;
+  }
+
+  notes += `\n所有功能在无网络连接的情况下也可基本使用。\n`;
+  notes += `（请根据实际应用需求进行修改）\n`;
+
+  return notes;
+}
+
+function generateContentRatingGuideZh(info: IProjectInfo): string {
+  let guide = '';
+  guide += `Google Play 内容分级指南：\n\n`;
+  guide += `请在 Google Play Console > 应用内容 > 内容分级 中完成问卷调查。\n\n`;
+  guide += `需要回答以下项目:\n\n`;
+
+  guide += `1. 暴力内容: `;
+  guide += `无（如不适用）\n`;
+
+  guide += `2. 色情内容: `;
+  guide += `无（如不适用）\n`;
+
+  guide += `3. 语言: `;
+  guide += `轻微（如包含一般文本）\n`;
+
+  guide += `4. 毒品/酒精/烟草: `;
+  guide += `无（如不适用）\n`;
+
+  if (info.hasAds) {
+    guide += `5. 广告: 是 - 应用包含广告\n`;
+  } else {
+    guide += `5. 广告: 否\n`;
+  }
+
+  if (info.hasInAppPurchase) {
+    guide += `6. 应用内购买: 是 - 可购买数字商品\n`;
+  } else {
+    guide += `6. 应用内购买: 否\n`;
+  }
+
+  if (info.hasUserAuth) {
+    guide += `7. 用户生成内容: 需确认（是否存在用户间互动）\n`;
+  } else {
+    guide += `7. 用户生成内容: 否\n`;
+  }
+
+  guide += `\n预计分级: 适合所有人 (Everyone) 或 12岁以上 (Everyone 12+)\n`;
+  guide += `（可能因实际应用内容而有所不同）\n`;
+
+  return guide;
+}
+
+function generateIOSAgeRatingGuide(info: IProjectInfo): string {
+  let guide = '';
+
+  guide += `=== iOS 연령 등급 설정 가이드 (7단계) ===\n\n`;
+  guide += `프로젝트 분석을 기반으로 자동 생성된 연령 등급 답변입니다.\n`;
+  guide += `실제 앱 콘텐츠에 맞게 검토 후 수정하세요.\n\n`;
+
+  // Step 1: App Controls & Features
+  guide += `--- 1단계: 앱 내 제어 및 제공 기능 ---\n\n`;
+  guide += `[앱 내 제어]\n`;
+  guide += `유해 콘텐츠 차단: 아니요\n`;
+  guide += `  → 자녀 보호/모니터링 기능이 감지되지 않았습니다.\n`;
+  guide += `나이 확인: 아니요\n`;
+  guide += `  → 연령 확인 메커니즘이 감지되지 않았습니다.\n\n`;
+
+  guide += `[제공 기능]\n`;
+  guide += `제한되지 않은 웹 액세스: ${info.hasWebView ? '예' : '아니요'}\n`;
+  if (info.hasWebView) {
+    guide += `  → WebView 또는 브라우저 관련 의존성이 감지되었습니다.\n`;
+  } else {
+    guide += `  → 웹 브라우징 기능이 감지되지 않았습니다.\n`;
+  }
+  guide += `사용자 생성 콘텐츠: ${info.hasUGC ? '예' : '아니요'}\n`;
+  if (info.hasUGC) {
+    guide += `  → 사용자 콘텐츠 배포/공유 관련 기능이 감지되었습니다.\n`;
+  } else {
+    guide += `  → 사용자 콘텐츠 배포 기능이 감지되지 않았습니다.\n`;
+  }
+  guide += `메시지 및 채팅: ${info.hasChat ? '예' : '아니요'}\n`;
+  if (info.hasChat) {
+    guide += `  → 채팅/메시징 관련 의존성이 감지되었습니다.\n`;
+  } else {
+    guide += `  → 사용자 간 통신 기능이 감지되지 않았습니다.\n`;
+  }
+  guide += `광고: ${info.hasAds ? '예' : '아니요'}\n`;
+  if (info.hasAds) {
+    guide += `  → 광고 관련 의존성(AdMob 등)이 감지되었습니다.\n`;
+  } else {
+    guide += `  → 광고 관련 의존성이 감지되지 않았습니다.\n`;
+  }
+  guide += `\n`;
+
+  // Step 2: Content Frequency
+  guide += `--- 2단계: 콘텐츠 빈도 ---\n\n`;
+  guide += `성적 테마: ${info.hasSexualContent ? '빈번' : '없음'}\n`;
+  guide += `욕설 또는 노골적인 유머: 없음\n`;
+  guide += `  → 욕설/노골적 유머 콘텐츠가 감지되지 않았습니다.\n`;
+  guide += `잔혹/공포 테마: 없음\n`;
+  guide += `  → 공포/잔혹 콘텐츠가 감지되지 않았습니다.\n`;
+  guide += `음주, 흡연 또는 약물 사용: 없음\n`;
+  guide += `  → 약물/음주/흡연 관련 콘텐츠가 감지되지 않았습니다.\n`;
+  guide += `\n`;
+
+  // Step 3: Medical/Health
+  guide += `--- 3단계: 의료/건강 콘텐츠 ---\n\n`;
+  guide += `의료 또는 치료 정보: ${info.hasHealthContent ? '드문' : '없음'}\n`;
+  if (info.hasHealthContent) {
+    guide += `  → 건강/의료 관련 의존성 또는 콘텐츠가 감지되었습니다.\n`;
+  } else {
+    guide += `  → 의료/치료 관련 콘텐츠가 감지되지 않았습니다.\n`;
+  }
+  guide += `건강 또는 웰빙 주제: ${info.hasHealthContent ? '예' : '아니요'}\n`;
+  guide += `\n`;
+
+  // Step 4: Sexual Content
+  guide += `--- 4단계: 성적 콘텐츠 ---\n\n`;
+  guide += `성적이거나 선정적인 테마: ${info.hasSexualContent ? '드문' : '없음'}\n`;
+  guide += `성적인 내용 또는 노출: 없음\n`;
+  guide += `노골적인 성적 내용 및 노출: 없음\n`;
+  guide += `\n`;
+
+  // Step 5: Violence
+  guide += `--- 5단계: 폭력 콘텐츠 ---\n\n`;
+  guide += `만화 또는 비현실적인 폭력: ${info.hasViolentContent ? '드문' : '없음'}\n`;
+  guide += `적나라한 폭력: 없음\n`;
+  guide += `잇따른 폭력의 생생한 묘사: 없음\n`;
+  guide += `총 또는 기타 무기: ${info.hasViolentContent ? '드문' : '없음'}\n`;
+  if (info.hasViolentContent) {
+    guide += `  → 폭력/무기 관련 콘텐츠가 감지되었습니다. 실제 수준을 확인하세요.\n`;
+  }
+  guide += `\n`;
+
+  // Step 6: Gambling
+  guide += `--- 6단계: 도박/경쟁 콘텐츠 ---\n\n`;
+  guide += `가상 도박: ${info.hasGambling ? '드문' : '없음'}\n`;
+  guide += `시합: 없음\n`;
+  guide += `도박: ${info.hasGambling ? '예' : '아니요'}\n`;
+  guide += `랜덤 박스: ${info.hasLootBox ? '예' : '아니요'}\n`;
+  if (info.hasGambling) {
+    guide += `  → 도박 관련 콘텐츠가 감지되었습니다.\n`;
+  }
+  if (info.hasLootBox) {
+    guide += `  → 랜덤 박스/가챠 관련 콘텐츠가 감지되었습니다.\n`;
+  }
+  guide += `\n`;
+
+  // Step 7: Calculated Rating
+  guide += `--- 7단계: 예상 등급 ---\n\n`;
+
+  // Calculate expected rating
+  let rating = '4+';
+  if (info.hasSexualContent || info.hasGambling) {
+    rating = '17+';
+  } else if (info.hasViolentContent) {
+    rating = '12+';
+  } else if (info.hasWebView || info.hasUGC || info.hasChat) {
+    rating = '12+';
+  } else if (info.hasHealthContent) {
+    rating = '12+';
+  }
+
+  guide += `예상 연령 등급: ${rating}\n`;
+  guide += `연령 카테고리 재정의: 해당 없음\n\n`;
+
+  // Summary table
+  guide += `--- 답변 요약 ---\n\n`;
+  guide += `| 단계 | 항목 | 답변 |\n`;
+  guide += `|------|------|------|\n`;
+  guide += `| 1 | 유해 콘텐츠 차단 | 아니요 |\n`;
+  guide += `| 1 | 나이 확인 | 아니요 |\n`;
+  guide += `| 1 | 제한되지 않은 웹 액세스 | ${info.hasWebView ? '예' : '아니요'} |\n`;
+  guide += `| 1 | 사용자 생성 콘텐츠 | ${info.hasUGC ? '예' : '아니요'} |\n`;
+  guide += `| 1 | 메시지 및 채팅 | ${info.hasChat ? '예' : '아니요'} |\n`;
+  guide += `| 1 | 광고 | ${info.hasAds ? '예' : '아니요'} |\n`;
+  guide += `| 2 | 성적 테마 | ${info.hasSexualContent ? '빈번' : '없음'} |\n`;
+  guide += `| 2 | 욕설 또는 노골적인 유머 | 없음 |\n`;
+  guide += `| 2 | 잔혹/공포 테마 | 없음 |\n`;
+  guide += `| 2 | 음주/흡연/약물 | 없음 |\n`;
+  guide += `| 3 | 의료 또는 치료 정보 | ${info.hasHealthContent ? '드문' : '없음'} |\n`;
+  guide += `| 3 | 건강 또는 웰빙 주제 | ${info.hasHealthContent ? '예' : '아니요'} |\n`;
+  guide += `| 4 | 성적이거나 선정적인 테마 | ${info.hasSexualContent ? '드문' : '없음'} |\n`;
+  guide += `| 4 | 성적인 내용 또는 노출 | 없음 |\n`;
+  guide += `| 4 | 노골적인 성적 내용 | 없음 |\n`;
+  guide += `| 5 | 만화/비현실적 폭력 | ${info.hasViolentContent ? '드문' : '없음'} |\n`;
+  guide += `| 5 | 적나라한 폭력 | 없음 |\n`;
+  guide += `| 5 | 잇따른 폭력 묘사 | 없음 |\n`;
+  guide += `| 5 | 총 또는 기타 무기 | ${info.hasViolentContent ? '드문' : '없음'} |\n`;
+  guide += `| 6 | 가상 도박 | ${info.hasGambling ? '드문' : '없음'} |\n`;
+  guide += `| 6 | 시합 | 없음 |\n`;
+  guide += `| 6 | 도박 | ${info.hasGambling ? '예' : '아니요'} |\n`;
+  guide += `| 6 | 랜덤 박스 | ${info.hasLootBox ? '예' : '아니요'} |\n`;
+  guide += `| 7 | 예상 등급 | ${rating} |\n`;
+  guide += `| 7 | 재정의 | 해당 없음 |\n`;
+
+  return guide;
+}
+
 export async function handleGenerateStoreListing(args: IStoreListingArgs): Promise<CallToolResult> {
   const { projectDir, platform = 'both', language = 'ko' } = args;
 
@@ -1118,7 +2130,13 @@ export async function handleGenerateStoreListing(args: IStoreListingArgs): Promi
   output += `번들 ID: ${projectInfo.bundleId}\n`;
   output += `프레임워크: ${projectInfo.framework}\n`;
   output += `버전: ${projectInfo.version}\n`;
-  output += `언어: ${language === 'ko' ? '한국어' : 'English'}\n`;
+  const langNames: Record<TLanguage, string> = {
+    ko: '한국어',
+    en: 'English',
+    ja: '日本語',
+    zh: '中文',
+  };
+  output += `언어: ${langNames[language]}\n`;
   output += `\n${'='.repeat(50)}\n\n`;
 
   if (platform === 'ios' || platform === 'both') {
@@ -1131,12 +2149,26 @@ export async function handleGenerateStoreListing(args: IStoreListingArgs): Promi
     output += `\n${'='.repeat(50)}\n\n`;
   }
 
+  // iOS Age Rating Guide
+  if (platform === 'ios' || platform === 'both') {
+    output += generateIOSAgeRatingGuide(projectInfo);
+    output += `\n${'='.repeat(50)}\n\n`;
+  }
+
   // Detected capabilities summary
   output += `=== 감지된 앱 특성 ===\n\n`;
   output += `광고 포함: ${projectInfo.hasAds ? '예' : '아니오'}\n`;
   output += `분석/통계: ${projectInfo.hasAnalytics ? '예' : '아니오'}\n`;
   output += `인앱 구매: ${projectInfo.hasInAppPurchase ? '예' : '아니오'}\n`;
   output += `사용자 인증: ${projectInfo.hasUserAuth ? '예' : '아니오'}\n`;
+  output += `웹뷰: ${projectInfo.hasWebView ? '예' : '아니오'}\n`;
+  output += `사용자 생성 콘텐츠: ${projectInfo.hasUGC ? '예' : '아니오'}\n`;
+  output += `채팅/메시징: ${projectInfo.hasChat ? '예' : '아니오'}\n`;
+  output += `도박: ${projectInfo.hasGambling ? '예' : '아니오'}\n`;
+  output += `랜덤 박스: ${projectInfo.hasLootBox ? '예' : '아니오'}\n`;
+  output += `건강/의료 콘텐츠: ${projectInfo.hasHealthContent ? '예' : '아니오'}\n`;
+  output += `폭력 콘텐츠: ${projectInfo.hasViolentContent ? '예' : '아니오'}\n`;
+  output += `성적 콘텐츠: ${projectInfo.hasSexualContent ? '예' : '아니오'}\n`;
   if (projectInfo.permissions.length > 0) {
     output += `감지된 권한: ${projectInfo.permissions.join(', ')}\n`;
   }

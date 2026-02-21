@@ -30,7 +30,21 @@ export interface IFastlaneConfig {
 
 export type TPlatform = 'ios' | 'android' | 'both';
 
-export type TLanguage = 'ko' | 'en';
+export type TLanguage = 'ko' | 'en' | 'ja' | 'zh';
+
+export interface IStoreMetadata {
+  appName: string;
+  subtitle: string;
+  description: string;
+  keywords: string;
+  whatsNew: string;
+  category: string;
+  shortDescription?: string;
+  contentRating?: string;
+  supportPage: string;
+  privacyPolicy: string;
+  reviewNotes: string;
+}
 
 export type TFramework = 'expo' | 'react-native' | 'flutter' | 'native';
 
@@ -46,8 +60,75 @@ export interface IProjectInfo {
   hasAnalytics: boolean;
   hasInAppPurchase: boolean;
   hasUserAuth: boolean;
+  hasWebView: boolean;
+  hasUGC: boolean;
+  hasChat: boolean;
+  hasGambling: boolean;
+  hasLootBox: boolean;
+  hasHealthContent: boolean;
+  hasViolentContent: boolean;
+  hasSexualContent: boolean;
   teamId?: string;
   dependencies: string[];
+}
+
+export type TAgeRatingAnswer = 'none' | 'infrequent' | 'frequent';
+export type TYesNo = 'yes' | 'no';
+
+export interface IIOSAgeRatingStep1 {
+  parentalControls: TYesNo;
+  ageVerification: TYesNo;
+  unrestrictedWebAccess: TYesNo;
+  userGeneratedContent: TYesNo;
+  messagingAndChat: TYesNo;
+  ads: TYesNo;
+}
+
+export interface IIOSAgeRatingStep2 {
+  sexualThemes: TAgeRatingAnswer;
+  profanity: TAgeRatingAnswer;
+  horrorThemes: TAgeRatingAnswer;
+  drugAlcoholTobacco: TAgeRatingAnswer;
+}
+
+export interface IIOSAgeRatingStep3 {
+  medicalInfo: TAgeRatingAnswer;
+  healthTopics: TYesNo;
+}
+
+export interface IIOSAgeRatingStep4 {
+  sexualSuggestiveThemes: TAgeRatingAnswer;
+  sexualContentNudity: TAgeRatingAnswer;
+  explicitSexualContent: TAgeRatingAnswer;
+}
+
+export interface IIOSAgeRatingStep5 {
+  cartoonViolence: TAgeRatingAnswer;
+  realisticViolence: TAgeRatingAnswer;
+  graphicViolence: TAgeRatingAnswer;
+  gunsWeapons: TAgeRatingAnswer;
+}
+
+export interface IIOSAgeRatingStep6 {
+  simulatedGambling: TAgeRatingAnswer;
+  contests: TAgeRatingAnswer;
+  gambling: TYesNo;
+  lootBox: TYesNo;
+}
+
+export interface IIOSAgeRatingStep7 {
+  calculatedRating: string;
+  ageOverride: 'none' | 'children' | 'higher';
+}
+
+export interface IIOSAgeRating {
+  step1: IIOSAgeRatingStep1;
+  step2: IIOSAgeRatingStep2;
+  step3: IIOSAgeRatingStep3;
+  step4: IIOSAgeRatingStep4;
+  step5: IIOSAgeRatingStep5;
+  step6: IIOSAgeRatingStep6;
+  step7: IIOSAgeRatingStep7;
 }
 
 export interface IStoreListingArgs {
