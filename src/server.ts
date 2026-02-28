@@ -31,7 +31,7 @@ export class AppPublisherServer {
   constructor() {
     this.server = new McpServer({
       name: 'app-publisher-mcp',
-      version: '1.5.1',
+      version: '1.5.2',
     });
 
     this.setupTools();

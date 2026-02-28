@@ -184,6 +184,31 @@ Required only if you want to publish to Google Play.
    - Click **"Grant access"** next to the service account
    - Grant **"Release manager"** permission
 
+#### Using JSON Key in Fastlane
+
+Place the JSON key file in your project (e.g., `fastlane/keys/`) and reference it in `Appfile`:
+
+```ruby
+# fastlane/Appfile
+json_key_file("fastlane/keys/play-store-service-account.json")
+package_name("com.example.myapp")
+```
+
+Then use fastlane supply to upload:
+
+```bash
+# Upload to production
+fastlane android release aab:"path/to/app.aab"
+
+# Upload to internal testing
+fastlane android internal aab:"path/to/app.aab"
+
+# Upload metadata only
+fastlane android metadata
+```
+
+> **Tip**: Add `fastlane/keys/*.json` to `.gitignore` to avoid committing the service account key.
+
 #### Where to Get Google Play Developer Account
 
 1. Go to [Google Play Console signup](https://play.google.com/console/signup)
