@@ -15,6 +15,8 @@ import {
   handleGetStatus,
   handleGenerateStoreListing,
   handleGetPublishingGuide,
+  handlePopulateMetadata,
+  handleValidateMetadata,
   handleSetupMaestro,
   handleMaestroScreenshot,
   handleMaestroRunFlow,
@@ -29,7 +31,7 @@ export class AppPublisherServer {
   constructor() {
     this.server = new McpServer({
       name: 'app-publisher-mcp',
-      version: '1.2.0',
+      version: '1.5.0',
     });
 
     this.setupTools();
@@ -96,7 +98,7 @@ export class AppPublisherServer {
 
     this.server.tool(
       'setup_fastlane',
-      'Generate fastlane configuration files (Fastfile, Appfile, metadata structure) for automated iOS/Android app publishing.',
+      'Generate fastlane configuration files (Fastfile, Appfile, metadata structure) for automated iOS/Android app publishing. Includes: copyright auto-set, app_review_information, precheck_include_in_app_purchases: false, skip_app_version_update for metadata lane.',
       {
         projectDir: z.string().describe('Path to the app project directory'),
         appIdentifier: z.string().describe('App bundle identifier (e.g., com.example.myapp)'),
@@ -105,6 +107,11 @@ export class AppPublisherServer {
         itunesConnectTeamId: z.string().optional().describe('App Store Connect Team ID (for iOS, if different from teamId)'),
         jsonKeyFile: z.string().optional().describe('Path to Google Play Console JSON key file (for Android)'),
         packageName: z.string().optional().describe('Android package name (if different from appIdentifier)'),
+        copyright: z.string().optional().describe('Copyright text (default: "{year} {appName}")'),
+        reviewContactEmail: z.string().optional().describe('App Review contact email address'),
+        reviewContactFirstName: z.string().optional().describe('App Review contact first name'),
+        reviewContactLastName: z.string().optional().describe('App Review contact last name'),
+        reviewContactPhone: z.string().optional().describe('App Review contact phone number'),
       },
       async (args) => handleSetupFastlane(args),
     );
@@ -129,6 +136,39 @@ export class AppPublisherServer {
         track: z.string().optional().describe('Release track: internal, alpha, beta, production (default: production)'),
       },
       async (args) => handlePublishAndroid(args),
+    );
+
+    this.server.tool(
+      'populate_metadata',
+      'Populate fastlane metadata directory with locale-specific content. Creates all required .txt files (name, subtitle, description, keywords, etc.) for each locale. Use this after generate_store_listing to write content directly to fastlane metadata files.',
+      {
+        projectDir: z.string().describe('Path to the app project directory (must contain fastlane/ directory)'),
+        locales: z.record(
+          z.string(),
+          z.object({
+            name: z.string().optional().describe('App name (max 30 chars)'),
+            subtitle: z.string().optional().describe('App subtitle (max 30 chars)'),
+            description: z.string().optional().describe('Full app description'),
+            keywords: z.string().optional().describe('Comma-separated keywords (max 100 chars)'),
+            promotional_text: z.string().optional().describe('Promotional text'),
+            release_notes: z.string().optional().describe('Release notes / What\'s New'),
+            privacy_url: z.string().optional().describe('Privacy policy URL'),
+            support_url: z.string().optional().describe('Support URL'),
+            marketing_url: z.string().optional().describe('Marketing URL'),
+            copyright: z.string().optional().describe('Copyright text'),
+          }),
+        ).describe('Map of locale code to metadata content. Example: {"en-US": {"name": "My App", ...}, "ko": {"name": "내 앱", ...}}'),
+      },
+      async (args) => handlePopulateMetadata(args),
+    );
+
+    this.server.tool(
+      'validate_metadata',
+      'Validate fastlane metadata files for App Store requirements. Checks: subtitle <= 30 chars, keywords <= 100 chars, required files present (name, description, privacy_url, support_url), copyright includes current year.',
+      {
+        projectDir: z.string().describe('Path to the app project directory (must contain fastlane/metadata/ directory)'),
+      },
+      async (args) => handleValidateMetadata(args),
     );
 
     this.server.tool(

@@ -26,6 +26,33 @@ export interface IFastlaneConfig {
   itunesConnectTeamId?: string;
   jsonKeyFile?: string;
   packageName?: string;
+  copyright?: string;
+  reviewContactEmail?: string;
+  reviewContactFirstName?: string;
+  reviewContactLastName?: string;
+  reviewContactPhone?: string;
+}
+
+export interface IMetadataValidationResult {
+  locale: string;
+  field: string;
+  value: string;
+  issue: string;
+  limit?: number;
+  actual?: number;
+}
+
+export interface IMetadataContent {
+  name?: string;
+  subtitle?: string;
+  description?: string;
+  keywords?: string;
+  promotional_text?: string;
+  release_notes?: string;
+  privacy_url?: string;
+  support_url?: string;
+  marketing_url?: string;
+  copyright?: string;
 }
 
 export type TPlatform = 'ios' | 'android' | 'both';

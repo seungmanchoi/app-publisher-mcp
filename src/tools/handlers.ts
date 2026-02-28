@@ -8,6 +8,7 @@ import {
   IProjectInfo,
   IStoreListingArgs,
   IPublishingGuideArgs,
+  IMetadataContent,
   TFramework,
   TLanguage,
 } from '../types/index.js';
@@ -107,6 +108,11 @@ export async function handleSetupFastlane(args: {
   itunesConnectTeamId?: string;
   jsonKeyFile?: string;
   packageName?: string;
+  copyright?: string;
+  reviewContactEmail?: string;
+  reviewContactFirstName?: string;
+  reviewContactLastName?: string;
+  reviewContactPhone?: string;
 }): Promise<CallToolResult> {
   const createdFiles = fastlaneService.setupFastlane({
     projectDir: args.projectDir,
@@ -116,6 +122,11 @@ export async function handleSetupFastlane(args: {
     itunesConnectTeamId: args.itunesConnectTeamId,
     jsonKeyFile: args.jsonKeyFile,
     packageName: args.packageName,
+    copyright: args.copyright,
+    reviewContactEmail: args.reviewContactEmail,
+    reviewContactFirstName: args.reviewContactFirstName,
+    reviewContactLastName: args.reviewContactLastName,
+    reviewContactPhone: args.reviewContactPhone,
   });
 
   let summary = `=== Fastlane Setup Complete ===\n\n`;
@@ -125,13 +136,79 @@ export async function handleSetupFastlane(args: {
   for (const file of createdFiles) {
     summary += `  - ${file}\n`;
   }
+
+  summary += `\nFastfile includes:\n`;
+  summary += `  - copyright: Auto-set with current year\n`;
+  summary += `  - app_review_information: Contact info for App Review team\n`;
+  summary += `  - precheck_include_in_app_purchases: false (API Key compatible)\n`;
+  summary += `  - skip_app_version_update: true (metadata lane)\n`;
+
   summary += `\nNext steps:\n`;
   summary += `  1. Fill in metadata files in fastlane/metadata/\n`;
-  summary += `  2. Run 'fastlane ios release' to publish to App Store\n`;
-  summary += `  3. Run 'fastlane android release' to publish to Google Play\n`;
+  summary += `     Or use 'populate_metadata' tool to auto-fill from content\n`;
+  summary += `  2. Use 'validate_metadata' tool to check for issues\n`;
+  summary += `  3. Run 'fastlane ios metadata' to upload metadata only\n`;
+  summary += `  4. Run 'fastlane ios release' to publish to App Store\n`;
+  summary += `  5. Run 'fastlane android release' to publish to Google Play\n`;
 
   if (!fastlaneService.checkInstalled()) {
     summary += `\n⚠️  fastlane is not installed. Install with: brew install fastlane\n`;
+  }
+
+  return { content: [{ type: 'text', text: summary }] };
+}
+
+export async function handlePopulateMetadata(args: {
+  projectDir: string;
+  locales: Record<string, IMetadataContent>;
+}): Promise<CallToolResult> {
+  const result = fastlaneService.populateMetadata(args.projectDir, args.locales);
+
+  let summary = `=== Metadata Population Complete ===\n\n`;
+  summary += `Locales: ${result.locales.join(', ')}\n`;
+  summary += `Files created: ${result.created}\n`;
+  summary += `Files updated: ${result.updated}\n`;
+  summary += `Total files: ${result.created + result.updated}\n\n`;
+  summary += `Metadata directory: ${path.join(args.projectDir, 'fastlane', 'metadata')}\n`;
+  summary += `\nNext: Use 'validate_metadata' to check for issues before uploading.\n`;
+
+  return { content: [{ type: 'text', text: summary }] };
+}
+
+export async function handleValidateMetadata(args: {
+  projectDir: string;
+}): Promise<CallToolResult> {
+  const issues = fastlaneService.validateMetadata(args.projectDir);
+
+  if (issues.length === 0) {
+    return {
+      content: [{ type: 'text', text: '=== Metadata Validation Passed ===\n\nNo issues found. All metadata files are valid.' }],
+    };
+  }
+
+  let summary = `=== Metadata Validation Report ===\n\n`;
+  summary += `Found ${issues.length} issue(s):\n\n`;
+
+  const grouped: Record<string, typeof issues> = {};
+  for (const issue of issues) {
+    const key = issue.locale;
+    if (!grouped[key]) grouped[key] = [];
+    grouped[key].push(issue);
+  }
+
+  for (const [locale, localeIssues] of Object.entries(grouped)) {
+    summary += `[${locale}]\n`;
+    for (const issue of localeIssues) {
+      if (issue.limit !== undefined && issue.actual !== undefined) {
+        summary += `  ❌ ${issue.field}: ${issue.issue} (${issue.actual}/${issue.limit} chars)\n`;
+        if (issue.value) {
+          summary += `     Value: "${issue.value}"\n`;
+        }
+      } else {
+        summary += `  ❌ ${issue.field}: ${issue.issue}\n`;
+      }
+    }
+    summary += `\n`;
   }
 
   return { content: [{ type: 'text', text: summary }] };

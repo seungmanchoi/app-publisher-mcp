@@ -12,6 +12,8 @@ export {
   handleGetStatus,
   handleGenerateStoreListing,
   handleGetPublishingGuide,
+  handlePopulateMetadata,
+  handleValidateMetadata,
 } from './handlers.js';
 export {
   handleSetupMaestro,

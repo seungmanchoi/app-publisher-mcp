@@ -12,7 +12,9 @@ Stop wasting time on Figma for app icons or manually resizing images for every s
 | `resize_icons` | Auto-resize to all iOS & Android required sizes |
 | `generate_splash` | Generate splash screen designs with AI |
 | `generate_screenshot` | Generate app store screenshot mockups |
-| `setup_fastlane` | Generate fastlane config for store publishing |
+| `setup_fastlane` | Generate fastlane config with copyright, review info, and precheck settings |
+| `populate_metadata` | Write store listing content directly to fastlane metadata files |
+| `validate_metadata` | Validate metadata against App Store requirements (length limits, required fields) |
 | `publish_ios` | Publish to App Store via fastlane |
 | `publish_android` | Publish to Google Play via fastlane |
 | `generate_store_listing` | Auto-generate store metadata + iOS age rating guide + App Privacy guide (4 languages) |
@@ -168,15 +170,17 @@ Required only if you want to publish to Google Play.
 
 ### Fastlane (For Store Publishing)
 
-Required only if you want to use the `publish_ios` or `publish_android` tools.
+**Required** for `setup_fastlane`, `publish_ios`, `publish_android`, `populate_metadata`, and `validate_metadata` tools.
 
 ```bash
-# macOS
+# macOS (recommended)
 brew install fastlane
 
 # or via Ruby
 gem install fastlane
 ```
+
+> **Note**: Age ratings and App Privacy settings must be configured directly in [App Store Connect](https://appstoreconnect.apple.com/) — fastlane does not support uploading these. Use the `generate_store_listing` tool to get a step-by-step guide for these settings.
 
 ## Usage Examples
 
@@ -202,10 +206,38 @@ This generates:
 
 > "Set up fastlane for my project at ~/myapp with bundle ID com.example.myapp"
 
+You can also provide review contact info and copyright:
+
+> "Set up fastlane for ~/myapp with bundle ID com.example.myapp, app name 'My App', copyright '2026 John Doe', review contact email john@example.com"
+
 This creates:
-- `fastlane/Fastfile` - Build and deploy lanes
+- `fastlane/Fastfile` - Build and deploy lanes with:
+  - Auto-set copyright with current year
+  - `app_review_information` block (prevents `No data` crash on new apps)
+  - `precheck_include_in_app_purchases: false` (for API key auth)
+  - `skip_app_version_update: true` for metadata-only uploads
 - `fastlane/Appfile` - App configuration
-- `fastlane/metadata/` - Store listing metadata structure
+- `fastlane/metadata/` - Store listing metadata structure (10 files per locale)
+
+### Populate Metadata
+
+After generating store listing content, write it directly to fastlane metadata files:
+
+> "Populate fastlane metadata for ~/myapp with en-US name 'My App', description 'A great app...', and ko name '내 앱'"
+
+This writes content to `fastlane/metadata/{locale}/{field}.txt` files. Supported fields: `name`, `subtitle`, `description`, `keywords`, `promotional_text`, `release_notes`, `privacy_url`, `support_url`, `marketing_url`, `copyright`.
+
+### Validate Metadata
+
+Check your metadata against App Store requirements before uploading:
+
+> "Validate fastlane metadata for ~/myapp"
+
+Checks:
+- **Subtitle**: max 30 characters
+- **Keywords**: max 100 characters
+- **Required files**: `name.txt`, `description.txt`, `privacy_url.txt`, `support_url.txt`
+- **Copyright**: must include current year
 
 ### Generate Store Listing Metadata
 
@@ -369,8 +401,11 @@ This MCP is designed for the vibe coding workflow - build your app with AI, then
 4. "Set up Maestro and take a screenshot of my app" → Live app capture
 5. "Create store screenshots with headline 'Your App, Reimagined'" → Marketing-ready images
 6. "Generate store listing for my project" → All metadata ready
-7. "Show me the iOS publishing guide" → Step-by-step instructions
-8. "Set up fastlane and publish" → App goes to stores
+7. "Set up fastlane for my project" → Fastlane configured with review info & copyright
+8. "Populate fastlane metadata" → Store listing written to metadata files
+9. "Validate metadata" → Check before uploading
+10. "Show me the iOS publishing guide" → Step-by-step instructions
+11. "Publish to App Store" → App goes to stores
 ```
 
 No design skills needed. No Figma. No manual resizing. Just vibe and ship.
