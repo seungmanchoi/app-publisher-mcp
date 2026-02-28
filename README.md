@@ -130,6 +130,30 @@ Required only if you want to publish to the App Store.
    - **Key ID** (e.g., `ABC1234567`)
    - **Issuer ID** (shown at the top of the page)
 
+#### Using API Key in Fastlane
+
+Place the `.p8` file in your project (e.g., `fastlane/keys/`) and add the API key block to your `Fastfile`:
+
+```ruby
+api_key = app_store_connect_api_key(
+  key_id: "ABC1234567",
+  issuer_id: "your-issuer-id-here",
+  key_filepath: File.join(Dir.pwd, "keys", "AuthKey_ABC1234567.p8"),
+  in_house: false
+)
+
+platform :ios do
+  lane :release do
+    deliver(
+      api_key: api_key,
+      # ... other options
+    )
+  end
+end
+```
+
+> **Tip**: Add `fastlane/keys/*.p8` to `.gitignore` to avoid committing the private key. The `.p8` file can be deleted from Downloads after copying to your project.
+
 #### Where to Get Apple Developer Account
 
 1. Go to [Apple Developer Program](https://developer.apple.com/programs/)
