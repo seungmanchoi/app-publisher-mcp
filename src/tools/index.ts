@@ -27,6 +27,7 @@ export {
   handleConfigureAdMob,
   handleAdMobAuth,
   handleAdMobListApps,
+  handleAdMobCreateApp,
   handleAdMobListAdUnits,
   handleAdMobCreateAdUnit,
   handleAdMobIntegrate,

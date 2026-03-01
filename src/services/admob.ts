@@ -136,6 +136,22 @@ class AdMobService {
     return accountName;
   }
 
+  async createApp(platform: 'ANDROID' | 'IOS', displayName: string, appStoreId?: string): Promise<IAdMobApp> {
+    const accountId = await this.getAccountId();
+    const body: Record<string, unknown> = {
+      platform,
+    };
+
+    if (appStoreId) {
+      body.linkedAppInfo = { appStoreId };
+    } else {
+      body.manualAppInfo = { displayName };
+    }
+
+    const app = await this.apiRequest<IAdMobApp>(`/${accountId}/apps`, 'POST', body);
+    return app;
+  }
+
   async listApps(): Promise<IAdMobApp[]> {
     const accountId = await this.getAccountId();
     const data = await this.apiRequest<{ apps?: IAdMobApp[] }>(`/${accountId}/apps`);

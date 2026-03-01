@@ -26,6 +26,7 @@ import {
   handleConfigureAdMob,
   handleAdMobAuth,
   handleAdMobListApps,
+  handleAdMobCreateApp,
   handleAdMobListAdUnits,
   handleAdMobCreateAdUnit,
   handleAdMobIntegrate,
@@ -38,7 +39,7 @@ export class AppPublisherServer {
   constructor() {
     this.server = new McpServer({
       name: 'app-publisher-mcp',
-      version: '1.6.0',
+      version: '1.6.1',
     });
 
     this.setupTools();
@@ -344,6 +345,20 @@ export class AppPublisherServer {
       'List all apps registered in your AdMob account. Requires AdMob authentication.',
       {},
       async () => handleAdMobListApps(),
+    );
+
+    this.server.tool(
+      'admob_create_app',
+      'Create a new app in your AdMob account. You can link it to an existing App Store / Play Store app, or create it manually with a display name.',
+      {
+        platform: z.enum(['IOS', 'ANDROID']).describe('App platform: IOS or ANDROID'),
+        displayName: z.string().describe('Display name for the app (e.g., "My Awesome App")'),
+        appStoreId: z
+          .string()
+          .optional()
+          .describe('App Store ID (iOS) or Package Name (Android) to link. If omitted, creates an unlinked manual app.'),
+      },
+      async (args) => handleAdMobCreateApp(args),
     );
 
     this.server.tool(

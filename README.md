@@ -41,6 +41,7 @@ Stop wasting time on Figma for app icons or manually resizing images for every s
 | `configure_admob` | Set up Google AdMob OAuth credentials and get authorization URL |
 | `admob_auth` | Complete OAuth flow by exchanging authorization code for tokens |
 | `admob_list_apps` | List all apps registered in your AdMob account |
+| `admob_create_app` | Create a new app in AdMob (link to store or manual) |
 | `admob_list_ad_units` | List existing ad units (optionally filter by app) |
 | `admob_create_ad_unit` | Create a new ad unit (Banner, Interstitial, Rewarded, App Open, Native) |
 | `admob_integrate` | Generate React Native ad components and configuration for your project |

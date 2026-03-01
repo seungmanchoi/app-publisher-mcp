@@ -82,6 +82,39 @@ export async function handleAdMobListApps(): Promise<CallToolResult> {
   }
 }
 
+export async function handleAdMobCreateApp(args: {
+  platform: string;
+  displayName: string;
+  appStoreId?: string;
+}): Promise<CallToolResult> {
+  const platform = args.platform.toUpperCase();
+  if (platform !== 'ANDROID' && platform !== 'IOS') {
+    return {
+      content: [{ type: 'text', text: `Invalid platform: ${args.platform}\nValid platforms: IOS, ANDROID` }],
+      isError: true,
+    };
+  }
+
+  try {
+    const app = await admobService.createApp(platform as 'ANDROID' | 'IOS', args.displayName, args.appStoreId);
+
+    let text = `=== AdMob App Created ===\n\n`;
+    text += `App ID: ${app.appId}\n`;
+    text += `Name: ${app.linkedAppInfo?.displayName ?? args.displayName}\n`;
+    text += `Platform: ${platform}\n`;
+    text += `Resource: ${app.name}\n`;
+    if (args.appStoreId) {
+      text += `Store ID: ${args.appStoreId}\n`;
+    }
+    text += `\nUse this App ID when creating ad units with admob_create_ad_unit.`;
+
+    return { content: [{ type: 'text', text }] };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    return { content: [{ type: 'text', text: `Failed to create app: ${message}` }], isError: true };
+  }
+}
+
 export async function handleAdMobListAdUnits(args: { appId?: string }): Promise<CallToolResult> {
   try {
     const adUnits = await admobService.listAdUnits(args.appId);
