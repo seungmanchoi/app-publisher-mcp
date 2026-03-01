@@ -1,6 +1,7 @@
 export interface IAppConfig {
   geminiApiKey: string;
   geminiModel?: string;
+  admob?: IAdMobConfig;
 }
 
 export interface IIconSize {
@@ -209,4 +210,34 @@ export interface IStoreScreenshotResult {
   width: number;
   height: number;
   path: string;
+}
+
+// AdMob Types
+export type TAdFormat = 'BANNER' | 'INTERSTITIAL' | 'REWARDED' | 'REWARDED_INTERSTITIAL' | 'APP_OPEN' | 'NATIVE';
+
+export interface IAdMobConfig {
+  clientId: string;
+  clientSecret: string;
+  accessToken?: string;
+  refreshToken?: string;
+  tokenExpiry?: number;
+  accountId?: string;
+}
+
+export interface IAdMobAdUnit {
+  name: string;
+  adUnitId: string;
+  appId: string;
+  displayName: string;
+  adFormat: TAdFormat;
+}
+
+export interface IAdMobApp {
+  name: string;
+  appId: string;
+  platform: string;
+  linkedAppInfo?: {
+    appStoreId?: string;
+    displayName?: string;
+  };
 }

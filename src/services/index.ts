@@ -4,3 +4,4 @@ export { fastlaneService } from './fastlane.js';
 export { maestroService } from './maestro.js';
 export type { IMaestroFlowStep, IMaestroRunResult, IBootedDevices, IMaestroInstallResult } from './maestro.js';
 export { storeScreenshotService } from './store-screenshot.js';
+export { admobService } from './admob.js';

@@ -1,7 +1,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
-import { IAppConfig } from '../types/index.js';
+import { IAppConfig, IAdMobConfig } from '../types/index.js';
 
 const CONFIG_DIR = path.join(os.homedir(), '.app-publisher');
 const CONFIG_FILE = path.join(CONFIG_DIR, 'config.json');
@@ -66,6 +66,46 @@ class SettingsManager {
     if (process.env.GEMINI_API_KEY) return 'env';
     if (this.config.geminiApiKey) return 'config';
     return 'none';
+  }
+
+  getAdMobConfig(): IAdMobConfig | undefined {
+    return this.config.admob;
+  }
+
+  setAdMobCredentials(clientId: string, clientSecret: string): void {
+    this.config.admob = {
+      ...this.config.admob,
+      clientId,
+      clientSecret,
+    } as IAdMobConfig;
+    this.persistConfig();
+  }
+
+  updateAdMobTokens(accessToken: string, refreshToken?: string, expiresIn?: number): void {
+    if (!this.config.admob) {
+      throw new Error('AdMob not configured');
+    }
+    this.config.admob.accessToken = accessToken;
+    if (refreshToken) {
+      this.config.admob.refreshToken = refreshToken;
+    }
+    if (expiresIn) {
+      this.config.admob.tokenExpiry = Date.now() + expiresIn * 1000;
+    }
+    this.persistConfig();
+  }
+
+  updateAdMobAccountId(accountId: string): void {
+    if (!this.config.admob) {
+      throw new Error('AdMob not configured');
+    }
+    this.config.admob.accountId = accountId;
+    this.persistConfig();
+  }
+
+  isAdMobConfigured(): boolean {
+    const admob = this.config.admob;
+    return !!(admob?.clientId && admob?.clientSecret && admob?.refreshToken);
   }
 }
 

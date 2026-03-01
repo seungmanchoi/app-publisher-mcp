@@ -23,6 +23,13 @@ import {
   handleMaestroRunYaml,
   handleMaestroStatus,
   handleMaestroStoreScreenshot,
+  handleConfigureAdMob,
+  handleAdMobAuth,
+  handleAdMobListApps,
+  handleAdMobListAdUnits,
+  handleAdMobCreateAdUnit,
+  handleAdMobIntegrate,
+  handleAdMobStatus,
 } from './tools/index.js';
 
 export class AppPublisherServer {
@@ -31,7 +38,7 @@ export class AppPublisherServer {
   constructor() {
     this.server = new McpServer({
       name: 'app-publisher-mcp',
-      version: '1.5.2',
+      version: '1.6.0',
     });
 
     this.setupTools();
@@ -309,6 +316,94 @@ export class AppPublisherServer {
         outputDir: z.string().optional().describe('Output directory for store screenshots (default: ~/app-publisher-assets/maestro/store_<timestamp>)'),
       },
       async (args) => handleMaestroStoreScreenshot(args),
+    );
+
+    // AdMob Integration Tools
+
+    this.server.tool(
+      'configure_admob',
+      'Set up Google AdMob OAuth credentials for ad unit management. After configuration, an authorization URL will be provided to complete the OAuth flow.',
+      {
+        clientId: z.string().describe('Google OAuth 2.0 Client ID (from Google Cloud Console)'),
+        clientSecret: z.string().describe('Google OAuth 2.0 Client Secret'),
+      },
+      async (args) => handleConfigureAdMob(args),
+    );
+
+    this.server.tool(
+      'admob_auth',
+      'Complete AdMob OAuth authentication by exchanging the authorization code for access tokens. Run configure_admob first to get the auth URL.',
+      {
+        authCode: z.string().describe('Authorization code from Google OAuth consent screen'),
+      },
+      async (args) => handleAdMobAuth(args),
+    );
+
+    this.server.tool(
+      'admob_list_apps',
+      'List all apps registered in your AdMob account. Requires AdMob authentication.',
+      {},
+      async () => handleAdMobListApps(),
+    );
+
+    this.server.tool(
+      'admob_list_ad_units',
+      'List ad units in your AdMob account. Optionally filter by app ID.',
+      {
+        appId: z.string().optional().describe('Filter ad units by AdMob App ID (e.g., ca-app-pub-xxxxx~yyyyy)'),
+      },
+      async (args) => handleAdMobListAdUnits(args),
+    );
+
+    this.server.tool(
+      'admob_create_ad_unit',
+      'Create a new ad unit in your AdMob account. Supported formats: BANNER, INTERSTITIAL, REWARDED, REWARDED_INTERSTITIAL, APP_OPEN, NATIVE.',
+      {
+        appId: z.string().describe('AdMob App ID to create the ad unit for (e.g., ca-app-pub-xxxxx~yyyyy)'),
+        displayName: z.string().describe('Display name for the ad unit (e.g., "Home Banner", "Level Complete Interstitial")'),
+        adFormat: z
+          .enum(['BANNER', 'INTERSTITIAL', 'REWARDED', 'REWARDED_INTERSTITIAL', 'APP_OPEN', 'NATIVE'])
+          .describe('Ad format type'),
+      },
+      async (args) => handleAdMobCreateAdUnit(args),
+    );
+
+    this.server.tool(
+      'admob_integrate',
+      'Generate AdMob integration code for a React Native / Expo project. Creates ad components (Banner, Interstitial, Rewarded, AppOpen) with test ID support and installs required dependencies.',
+      {
+        projectDir: z.string().describe('Path to the app project directory'),
+        platform: z
+          .enum(['ios', 'android', 'both'])
+          .optional()
+          .describe('Target platform (default: both)'),
+        iosAppId: z
+          .string()
+          .optional()
+          .describe('AdMob iOS App ID (e.g., ca-app-pub-xxxxx~yyyyy)'),
+        androidAppId: z
+          .string()
+          .optional()
+          .describe('AdMob Android App ID (e.g., ca-app-pub-xxxxx~yyyyy)'),
+        adUnits: z
+          .array(
+            z.object({
+              id: z.string().describe('Ad Unit ID from AdMob'),
+              format: z.string().describe('Ad format: BANNER, INTERSTITIAL, REWARDED, APP_OPEN'),
+              name: z.string().describe('Component name prefix (e.g., "Home" → AdHomeBanner.tsx)'),
+            }),
+          )
+          .optional()
+          .describe('Ad units to generate code for. If omitted, generates sample Banner + Interstitial.'),
+      },
+      async (args) => handleAdMobIntegrate(args),
+    );
+
+    this.server.tool(
+      'admob_status',
+      'Check AdMob OAuth configuration and authentication status.',
+      {},
+      async () => handleAdMobStatus(),
     );
   }
 

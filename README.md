@@ -34,6 +34,18 @@ Stop wasting time on Figma for app icons or manually resizing images for every s
 | `maestro_store_screenshot` | Create professional store screenshots with AI-generated headlines + device frames |
 | `maestro_status` | Check Maestro installation and running devices |
 
+### AdMob Integration
+
+| Tool | Description |
+|------|-------------|
+| `configure_admob` | Set up Google AdMob OAuth credentials and get authorization URL |
+| `admob_auth` | Complete OAuth flow by exchanging authorization code for tokens |
+| `admob_list_apps` | List all apps registered in your AdMob account |
+| `admob_list_ad_units` | List existing ad units (optionally filter by app) |
+| `admob_create_ad_unit` | Create a new ad unit (Banner, Interstitial, Rewarded, App Open, Native) |
+| `admob_integrate` | Generate React Native ad components and configuration for your project |
+| `admob_status` | Check AdMob OAuth configuration and authentication status |
+
 ## Quick Start
 
 ### 1. Install in Claude Code
@@ -112,6 +124,53 @@ The key is stored in `~/.app-publisher/config.json` and persists across sessions
 | `gemini-3-pro-image-preview` | ~$0.035 (4K: ~$0.24) | 10-15 sec | Best |
 
 Google provides a free tier with generous limits for development. Check [Google AI pricing](https://ai.google.dev/pricing) for current rates.
+
+### Google AdMob OAuth Credentials (For Ad Management)
+
+Required for creating and managing ad units via the AdMob API.
+
+#### Step-by-Step
+
+1. Go to [Google Cloud Console](https://console.cloud.google.com/)
+2. Create a new project or select an existing one
+3. Enable the **AdMob API**:
+   - Go to **APIs & Services** > **Library**
+   - Search for "AdMob API"
+   - Click **Enable**
+4. Create OAuth 2.0 credentials:
+   - Go to **APIs & Services** > **Credentials**
+   - Click **"Create Credentials"** > **"OAuth client ID"**
+   - Application type: **Desktop app**
+   - Name it (e.g., "app-publisher-mcp")
+   - Click **Create**
+5. Copy the **Client ID** and **Client Secret**
+
+> **Note**: If prompted, configure the OAuth consent screen first (External type is fine for personal use). Add the scopes `admob.monetization` and `admob.readonly`.
+
+#### Set Up AdMob in MCP
+
+```
+1. "Configure AdMob with client ID xxx and secret yyy"
+   → Stores credentials and returns an authorization URL
+
+2. Open the URL in your browser and sign in with your Google account
+   → Grant access and copy the authorization code
+
+3. "Authenticate AdMob with code xxxx"
+   → Exchanges code for tokens (stored in ~/.app-publisher/config.json)
+
+4. "List my AdMob apps"
+   → Verify connection works
+```
+
+#### Where to Get AdMob Account
+
+1. Go to [Google AdMob](https://admob.google.com/home/)
+2. Sign in with your Google account
+3. Accept the terms of service
+4. Create your first app or link an existing one
+
+> **Important**: AdMob credentials are stored locally in `~/.app-publisher/config.json`. The refresh token is used to automatically renew access tokens.
 
 ### Apple App Store Connect (For iOS Publishing)
 
@@ -383,6 +442,56 @@ You can customize background color, text color, and select specific device sizes
 
 > "Create a store screenshot with headline 'Beautiful Design' on black background with white text, for iPhone 6.7 and Phone only"
 
+### AdMob Integration
+
+#### Set Up AdMob
+
+> "Configure AdMob with client ID 123456.apps.googleusercontent.com and secret GOCSPX-xxx"
+
+This stores your OAuth credentials and provides an authorization URL. Visit the URL, sign in, and copy the auth code.
+
+> "Authenticate AdMob with code 4/0AY0e-xxx"
+
+#### Create Ad Units
+
+> "List my AdMob apps"
+
+> "Create a banner ad unit named 'Home Banner' for app ca-app-pub-xxxxx~yyyyy"
+
+> "Create a rewarded ad unit named 'Level Complete' for app ca-app-pub-xxxxx~yyyyy"
+
+Supported formats: `BANNER`, `INTERSTITIAL`, `REWARDED`, `REWARDED_INTERSTITIAL`, `APP_OPEN`, `NATIVE`
+
+#### Generate Integration Code
+
+> "Integrate AdMob into my project at ~/myapp with the ad units I just created"
+
+This generates:
+- **Ad components** in `src/features/ads/` (Banner, Interstitial, Rewarded, AppOpen)
+- **Test ID support** — automatically uses test ads in `__DEV__` mode
+- **app.json configuration** for `react-native-google-mobile-ads`
+- **ATT (App Tracking Transparency)** setup instructions for iOS
+
+Each generated component is ready to use:
+```tsx
+import { AdHomeBanner } from '@features/ads';
+
+// In your screen
+<AdHomeBanner />
+```
+
+#### Complete AdMob Workflow
+
+```
+1. "Configure AdMob with client ID and secret"
+2. Visit auth URL → Copy code
+3. "Authenticate AdMob with code xxxx"
+4. "List my AdMob apps"
+5. "Create a banner ad unit for my app"
+6. "Integrate AdMob into my project at ~/myapp"
+7. Import and use the generated components
+```
+
 ### Publish to Stores
 
 > "Publish my iOS app to the App Store. Project is at ~/myapp"
@@ -447,14 +556,16 @@ This MCP is designed for the vibe coding workflow - build your app with AI, then
 1. Build your app with Claude Code
 2. "Generate an icon for my app" → AI creates the icon
 3. "Resize it for iOS and Android" → All sizes generated
-4. "Set up Maestro and take a screenshot of my app" → Live app capture
-5. "Create store screenshots with headline 'Your App, Reimagined'" → Marketing-ready images
-6. "Generate store listing for my project" → All metadata ready
-7. "Set up fastlane for my project" → Fastlane configured with review info & copyright
-8. "Populate fastlane metadata" → Store listing written to metadata files
-9. "Validate metadata" → Check before uploading
-10. "Show me the iOS publishing guide" → Step-by-step instructions
-11. "Publish to App Store" → App goes to stores
+4. "Set up AdMob and create ad units" → Monetization ready
+5. "Integrate AdMob into my project" → Ad components generated
+6. "Set up Maestro and take a screenshot of my app" → Live app capture
+7. "Create store screenshots with headline 'Your App, Reimagined'" → Marketing-ready images
+8. "Generate store listing for my project" → All metadata ready
+9. "Set up fastlane for my project" → Fastlane configured with review info & copyright
+10. "Populate fastlane metadata" → Store listing written to metadata files
+11. "Validate metadata" → Check before uploading
+12. "Show me the iOS publishing guide" → Step-by-step instructions
+13. "Publish to App Store" → App goes to stores
 ```
 
 No design skills needed. No Figma. No manual resizing. Just vibe and ship.
@@ -488,6 +599,15 @@ open -a Simulator
 # Android
 emulator -avd <avd_name>
 ```
+
+### "AdMob not authenticated"
+Run `configure_admob` with your OAuth client ID and secret, then complete the auth flow with `admob_auth`. Credentials are stored in `~/.app-publisher/config.json`.
+
+### "AdMob API error (403)"
+The AdMob API v1beta may require additional access. Ensure:
+1. The AdMob API is enabled in your Google Cloud project
+2. Your OAuth consent screen has the required scopes (`admob.monetization`, `admob.readonly`)
+3. Your AdMob account is active at [admob.google.com](https://admob.google.com)
 
 ### MCP not connecting
 1. Restart Claude Code after adding the MCP server

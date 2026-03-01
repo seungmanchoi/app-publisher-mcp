@@ -23,3 +23,12 @@ export {
   handleMaestroStatus,
   handleMaestroStoreScreenshot,
 } from './maestro-handlers.js';
+export {
+  handleConfigureAdMob,
+  handleAdMobAuth,
+  handleAdMobListApps,
+  handleAdMobListAdUnits,
+  handleAdMobCreateAdUnit,
+  handleAdMobIntegrate,
+  handleAdMobStatus,
+} from './admob-handlers.js';
