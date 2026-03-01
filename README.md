@@ -41,11 +41,13 @@ Stop wasting time on Figma for app icons or manually resizing images for every s
 | `configure_admob` | Set up Google AdMob OAuth credentials and get authorization URL |
 | `admob_auth` | Complete OAuth flow by exchanging authorization code for tokens |
 | `admob_list_apps` | List all apps registered in your AdMob account |
-| `admob_create_app` | Create a new app in AdMob (link to store or manual) |
+| `admob_create_app` | Create a new app in AdMob (link to store or manual) * |
 | `admob_list_ad_units` | List existing ad units (optionally filter by app) |
-| `admob_create_ad_unit` | Create a new ad unit (Banner, Interstitial, Rewarded, App Open, Native) |
+| `admob_create_ad_unit` | Create a new ad unit (Banner, Interstitial, Rewarded, App Open, Native) * |
 | `admob_integrate` | Generate React Native ad components and configuration for your project |
 | `admob_status` | Check AdMob OAuth configuration and authentication status |
+
+> **\* Limited Access**: `admob_create_app` and `admob_create_ad_unit` use the AdMob API v1beta create methods, which have **restricted access by Google**. Most accounts will receive a 403 Permission Denied error. To use these, you must request access from your Google account manager. As an alternative, create apps and ad units directly in the [AdMob console](https://admob.google.com), then use `admob_list_apps`, `admob_list_ad_units`, and `admob_integrate` to generate integration code for your project.
 
 ## Quick Start
 
@@ -604,8 +606,11 @@ emulator -avd <avd_name>
 ### "AdMob not authenticated"
 Run `configure_admob` with your OAuth client ID and secret, then complete the auth flow with `admob_auth`. Credentials are stored in `~/.app-publisher/config.json`.
 
-### "AdMob API error (403)"
-The AdMob API v1beta may require additional access. Ensure:
+### "AdMob API error (403)" on create operations
+The AdMob API v1beta **create methods** (`accounts.apps.create`, `accounts.adUnits.create`) have **limited access**. According to Google's documentation: *"This method has limited access. If you see a 403 permission denied error, please reach out to your account manager for access."* Listing and reading operations work normally. Create apps and ad units in the [AdMob console](https://admob.google.com) instead, then use MCP tools to list and integrate them.
+
+### "AdMob API error (403)" on read operations
+Ensure:
 1. The AdMob API is enabled in your Google Cloud project
 2. Your OAuth consent screen has the required scopes (`admob.monetization`, `admob.readonly`)
 3. Your AdMob account is active at [admob.google.com](https://admob.google.com)
