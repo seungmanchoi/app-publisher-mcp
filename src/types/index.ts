@@ -2,6 +2,7 @@ export interface IAppConfig {
   geminiApiKey: string;
   geminiModel?: string;
   admob?: IAdMobConfig;
+  playStore?: IPlayStoreConfig;
 }
 
 export interface IIconSize {
@@ -210,6 +211,13 @@ export interface IStoreScreenshotResult {
   width: number;
   height: number;
   path: string;
+}
+
+// Google Play Store Types
+export interface IPlayStoreConfig {
+  jsonKeyPath: string;
+  serviceAccountEmail?: string;
+  projectId?: string;
 }
 
 // AdMob Types

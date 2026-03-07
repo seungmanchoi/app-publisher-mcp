@@ -31,6 +31,9 @@ import {
   handleAdMobCreateAdUnit,
   handleAdMobIntegrate,
   handleAdMobStatus,
+  handleConfigurePlayStore,
+  handlePlayStoreStatus,
+  handlePlayStoreSetupKey,
 } from './tools/index.js';
 
 export class AppPublisherServer {
@@ -39,7 +42,7 @@ export class AppPublisherServer {
   constructor() {
     this.server = new McpServer({
       name: 'app-publisher-mcp',
-      version: '1.6.1',
+      version: '1.7.0',
     });
 
     this.setupTools();
@@ -419,6 +422,36 @@ export class AppPublisherServer {
       'Check AdMob OAuth configuration and authentication status.',
       {},
       async () => handleAdMobStatus(),
+    );
+
+    // Google Play Store Tools
+
+    this.server.tool(
+      'configure_playstore',
+      'Configure Google Play Store API access by providing a service account JSON key file. Validates the key, stores the configuration globally, and optionally copies it to a project directory.',
+      {
+        jsonKeyPath: z.string().describe('Path to the Google Play service account JSON key file'),
+        projectDir: z.string().optional().describe('Optional project directory to copy the key into fastlane/keys/'),
+      },
+      async (args) => handleConfigurePlayStore(args),
+    );
+
+    this.server.tool(
+      'playstore_status',
+      'Check Google Play Store API configuration status. Shows service account details and validates the JSON key file.',
+      {},
+      async () => handlePlayStoreStatus(),
+    );
+
+    this.server.tool(
+      'playstore_setup_key',
+      'Set up Google Play Store publishing for a project. Copies the service account JSON key, creates/updates fastlane Appfile and Fastfile for Android, and creates the metadata directory structure with locale folders.',
+      {
+        jsonKeyPath: z.string().describe('Path to the Google Play service account JSON key file'),
+        projectDir: z.string().describe('Path to the app project directory'),
+        packageName: z.string().optional().describe('Android package name (e.g., com.example.myapp)'),
+      },
+      async (args) => handlePlayStoreSetupKey(args),
     );
   }
 

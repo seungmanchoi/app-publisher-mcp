@@ -33,3 +33,8 @@ export {
   handleAdMobIntegrate,
   handleAdMobStatus,
 } from './admob-handlers.js';
+export {
+  handleConfigurePlayStore,
+  handlePlayStoreStatus,
+  handlePlayStoreSetupKey,
+} from './playstore-handlers.js';

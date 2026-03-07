@@ -34,6 +34,14 @@ Stop wasting time on Figma for app icons or manually resizing images for every s
 | `maestro_store_screenshot` | Create professional store screenshots with AI-generated headlines + device frames |
 | `maestro_status` | Check Maestro installation and running devices |
 
+### Google Play Store
+
+| Tool | Description |
+|------|-------------|
+| `configure_playstore` | Configure Google Play API with service account JSON key (validate + store globally) |
+| `playstore_status` | Check Play Store API configuration and service account status |
+| `playstore_setup_key` | Full Android publishing setup: copy key, create Appfile/Fastfile, metadata structure |
+
 ### AdMob Integration
 
 | Tool | Description |
@@ -228,25 +236,61 @@ end
 
 Required only if you want to publish to Google Play.
 
-#### Step-by-Step
+#### Step 1: Create a Google Cloud Service Account
 
-1. Go to [Google Play Console](https://play.google.com/console/)
-2. Sign in with your Google account (one-time $25 registration fee)
-3. Go to **Setup** > **API access**
-4. Click **"Link"** to connect to a Google Cloud project
-5. Under **Service accounts**, click **"Create new service account"**
-6. In Google Cloud Console:
-   - Create a new service account
-   - Name it (e.g., "app-publisher-mcp")
-   - Grant role: **Service Account User**
-7. Create a JSON key for the service account:
-   - Go to **Keys** tab > **Add Key** > **Create new key** > **JSON**
+1. Go to [Google Cloud Console](https://console.cloud.google.com/)
+2. Create a new project or select an existing one
+3. Enable the **Google Play Android Developer API**:
+   - Go to **APIs & Services** > **Library**
+   - Search for "Google Play Android Developer API"
+   - Click **Enable**
+4. Create a Service Account:
+   - Go to **IAM & Admin** > **Service Accounts**
+   - Click **"Create Service Account"**
+   - Name: `Play Store Deploy` (or any name)
+   - ID: `play-store-deploy`
+   - Description: `Service account for Google Play Store publishing via fastlane`
+   - Skip role assignment (not needed, permissions are set in Play Console)
+5. Create a JSON key:
+   - Click the service account > **Keys** tab > **Add Key** > **Create new key** > **JSON**
    - Download the JSON key file
-8. Back in Google Play Console:
-   - Click **"Grant access"** next to the service account
-   - Grant **"Release manager"** permission
+   - Note the **service account email** (e.g., `play-store-deploy@project-id.iam.gserviceaccount.com`)
 
-#### Using JSON Key in Fastlane
+#### Step 2: Grant Access in Google Play Console
+
+> **Important**: The "API access" menu may not be visible in some accounts. Use the "Users and permissions" method instead.
+
+**Method A: Via API Access (if available)**
+1. Go to [Google Play Console](https://play.google.com/console/) > **Settings** > **API access**
+2. Link your Google Cloud project
+3. Grant access to the service account
+
+**Method B: Via Users and Permissions (recommended)**
+1. Go to [Google Play Console](https://play.google.com/console/) > **Users and permissions**
+2. Click **"Invite new users"**
+3. Enter the **service account email** from Step 1
+4. Set permissions:
+   - **Release management** (manage production, testing tracks)
+   - **Edit store listing** (update metadata, screenshots)
+5. Click **"Invite user"**
+
+> **Note**: It may take up to 24 hours for permissions to fully propagate.
+
+#### Step 3: Configure in MCP
+
+**Option A: Using the MCP tool (recommended)**
+```
+"Configure Play Store with JSON key at ~/Downloads/my-service-account.json for project ~/works/my-app"
+```
+This validates the key, copies it to `fastlane/keys/`, updates Appfile, and adds to .gitignore.
+
+**Option B: Using playstore_setup_key tool**
+```
+"Set up Play Store publishing for ~/works/my-app with JSON key ~/Downloads/my-key.json and package name com.example.myapp"
+```
+This creates the full fastlane Android setup including metadata directory structure.
+
+**Option C: Manual setup**
 
 Place the JSON key file in your project (e.g., `fastlane/keys/`) and reference it in `Appfile`:
 

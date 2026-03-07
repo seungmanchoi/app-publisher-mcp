@@ -1,7 +1,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
-import { IAppConfig, IAdMobConfig } from '../types/index.js';
+import { IAppConfig, IAdMobConfig, IPlayStoreConfig } from '../types/index.js';
 
 const CONFIG_DIR = path.join(os.homedir(), '.app-publisher');
 const CONFIG_FILE = path.join(CONFIG_DIR, 'config.json');
@@ -106,6 +106,24 @@ class SettingsManager {
   isAdMobConfigured(): boolean {
     const admob = this.config.admob;
     return !!(admob?.clientId && admob?.clientSecret && admob?.refreshToken);
+  }
+
+  // Play Store
+  getPlayStoreConfig(): IPlayStoreConfig | undefined {
+    return this.config.playStore;
+  }
+
+  setPlayStoreConfig(jsonKeyPath: string, serviceAccountEmail?: string, projectId?: string): void {
+    this.config.playStore = {
+      jsonKeyPath,
+      serviceAccountEmail,
+      projectId,
+    };
+    this.persistConfig();
+  }
+
+  isPlayStoreConfigured(): boolean {
+    return !!(this.config.playStore?.jsonKeyPath);
   }
 }
 
