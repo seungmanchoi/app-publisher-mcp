@@ -1,6 +1,5 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import { execSync } from 'child_process';
 import { settingsManager } from '../config/index.js';
 
 interface IServiceAccountJson {
@@ -16,7 +15,7 @@ interface IServiceAccountJson {
 
 export interface IPlayStoreValidationResult {
   valid: boolean;
-  jsonKeyPath: string;
+  jsonKeyPath?: string;
   serviceAccountEmail?: string;
   projectId?: string;
   errors: string[];
@@ -24,30 +23,46 @@ export interface IPlayStoreValidationResult {
 }
 
 export class PlayStoreService {
-  validateJsonKey(jsonKeyPath: string): IPlayStoreValidationResult {
+  /**
+   * Validate JSON key from file path or inline JSON string.
+   */
+  validateJsonKey(jsonKeyPathOrData: string): IPlayStoreValidationResult {
     const result: IPlayStoreValidationResult = {
       valid: false,
-      jsonKeyPath,
       errors: [],
       warnings: [],
     };
 
-    const resolvedPath = jsonKeyPath.startsWith('~')
-      ? path.join(process.env.HOME ?? '', jsonKeyPath.slice(1))
-      : path.resolve(jsonKeyPath);
-
-    if (!fs.existsSync(resolvedPath)) {
-      result.errors.push(`JSON key file not found: ${resolvedPath}`);
-      return result;
-    }
-
     let keyData: IServiceAccountJson;
-    try {
-      const content = fs.readFileSync(resolvedPath, 'utf-8');
-      keyData = JSON.parse(content) as IServiceAccountJson;
-    } catch {
-      result.errors.push('Failed to parse JSON key file. Ensure it is valid JSON.');
-      return result;
+
+    // Try parsing as inline JSON first
+    if (jsonKeyPathOrData.trimStart().startsWith('{')) {
+      try {
+        keyData = JSON.parse(jsonKeyPathOrData) as IServiceAccountJson;
+      } catch {
+        result.errors.push('Failed to parse inline JSON data.');
+        return result;
+      }
+    } else {
+      // Treat as file path
+      const resolvedPath = jsonKeyPathOrData.startsWith('~')
+        ? path.join(process.env.HOME ?? '', jsonKeyPathOrData.slice(1))
+        : path.resolve(jsonKeyPathOrData);
+
+      if (!fs.existsSync(resolvedPath)) {
+        result.errors.push(`JSON key file not found: ${resolvedPath}`);
+        return result;
+      }
+
+      try {
+        const content = fs.readFileSync(resolvedPath, 'utf-8');
+        keyData = JSON.parse(content) as IServiceAccountJson;
+      } catch {
+        result.errors.push('Failed to parse JSON key file.');
+        return result;
+      }
+
+      result.jsonKeyPath = resolvedPath;
     }
 
     if (keyData.type !== 'service_account') {
@@ -75,7 +90,6 @@ export class PlayStoreService {
     result.valid = true;
     result.serviceAccountEmail = keyData.client_email;
     result.projectId = keyData.project_id;
-    result.jsonKeyPath = resolvedPath;
 
     if (!keyData.client_email.includes('iam.gserviceaccount.com')) {
       result.warnings.push(
@@ -86,10 +100,15 @@ export class PlayStoreService {
     return result;
   }
 
-  copyKeyToProject(jsonKeyPath: string, projectDir: string): string {
-    const resolvedSource = jsonKeyPath.startsWith('~')
-      ? path.join(process.env.HOME ?? '', jsonKeyPath.slice(1))
-      : path.resolve(jsonKeyPath);
+  /**
+   * Write JSON key to a project's fastlane/keys directory.
+   * Accepts file path or inline JSON data from config.
+   */
+  writeKeyToProject(projectDir: string): string {
+    const config = settingsManager.getPlayStoreConfig();
+    if (!config) {
+      throw new Error('Play Store not configured.');
+    }
 
     const keysDir = path.join(projectDir, 'fastlane', 'keys');
     if (!fs.existsSync(keysDir)) {
@@ -97,7 +116,19 @@ export class PlayStoreService {
     }
 
     const destPath = path.join(keysDir, 'play-store-service-account.json');
-    fs.copyFileSync(resolvedSource, destPath);
+
+    if (config.jsonKeyData) {
+      // Write inline data
+      fs.writeFileSync(destPath, config.jsonKeyData);
+    } else if (config.jsonKeyPath) {
+      // Copy from file
+      const resolvedSource = config.jsonKeyPath.startsWith('~')
+        ? path.join(process.env.HOME ?? '', config.jsonKeyPath.slice(1))
+        : path.resolve(config.jsonKeyPath);
+      fs.copyFileSync(resolvedSource, destPath);
+    } else {
+      throw new Error('No JSON key data or path configured.');
+    }
 
     // Ensure .gitignore includes the key
     const gitignorePath = path.join(projectDir, '.gitignore');
@@ -111,33 +142,31 @@ export class PlayStoreService {
     return destPath;
   }
 
-  testConnection(projectDir: string): { success: boolean; message: string } {
-    const config = settingsManager.getPlayStoreConfig();
-    if (!config) {
-      return { success: false, message: 'Play Store not configured. Run configure_playstore first.' };
+  /**
+   * Copy key from file path to project (legacy support).
+   */
+  copyKeyToProject(jsonKeyPath: string, projectDir: string): string {
+    const resolvedSource = jsonKeyPath.startsWith('~')
+      ? path.join(process.env.HOME ?? '', jsonKeyPath.slice(1))
+      : path.resolve(jsonKeyPath);
+
+    const keysDir = path.join(projectDir, 'fastlane', 'keys');
+    if (!fs.existsSync(keysDir)) {
+      fs.mkdirSync(keysDir, { recursive: true });
     }
 
-    try {
-      // Test using fastlane supply with validate_only
-      const result = execSync(
-        'fastlane supply init --track production 2>&1 || true',
-        {
-          cwd: projectDir,
-          encoding: 'utf-8',
-          timeout: 30000,
-          env: { ...process.env },
-        },
-      );
+    const destPath = path.join(keysDir, 'play-store-service-account.json');
+    fs.copyFileSync(resolvedSource, destPath);
 
-      if (result.includes('Error') || result.includes('error')) {
-        return { success: false, message: result.trim() };
+    const gitignorePath = path.join(projectDir, '.gitignore');
+    if (fs.existsSync(gitignorePath)) {
+      const gitignore = fs.readFileSync(gitignorePath, 'utf-8');
+      if (!gitignore.includes('fastlane/keys/')) {
+        fs.appendFileSync(gitignorePath, '\n# Fastlane keys (service account, API keys)\nfastlane/keys/\n');
       }
-
-      return { success: true, message: 'Successfully connected to Google Play Console API.' };
-    } catch (error: unknown) {
-      const err = error as { message?: string };
-      return { success: false, message: err.message ?? 'Unknown error' };
     }
+
+    return destPath;
   }
 }
 

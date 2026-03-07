@@ -5,10 +5,19 @@ import { settingsManager } from '../config/index.js';
 import { playStoreService } from '../services/index.js';
 
 export async function handleConfigurePlayStore(args: {
-  jsonKeyPath: string;
+  jsonKeyPath?: string;
+  jsonKeyData?: string;
   projectDir?: string;
 }): Promise<CallToolResult> {
-  const validation = playStoreService.validateJsonKey(args.jsonKeyPath);
+  if (!args.jsonKeyPath && !args.jsonKeyData) {
+    return {
+      content: [{ type: 'text', text: 'Error: Provide either jsonKeyPath or jsonKeyData.' }],
+      isError: true,
+    };
+  }
+
+  const input = args.jsonKeyData ?? args.jsonKeyPath!;
+  const validation = playStoreService.validateJsonKey(input);
 
   if (!validation.valid) {
     return {
@@ -22,15 +31,24 @@ export async function handleConfigurePlayStore(args: {
     };
   }
 
-  // Store globally
-  settingsManager.setPlayStoreConfig(
-    validation.jsonKeyPath,
-    validation.serviceAccountEmail,
-    validation.projectId,
-  );
+  // Store globally (both path and inline data supported)
+  const configUpdate: { jsonKeyPath?: string; jsonKeyData?: string; serviceAccountEmail?: string; projectId?: string } = {
+    serviceAccountEmail: validation.serviceAccountEmail,
+    projectId: validation.projectId,
+  };
 
+  if (args.jsonKeyData) {
+    configUpdate.jsonKeyData = args.jsonKeyData;
+  }
+  if (args.jsonKeyPath) {
+    configUpdate.jsonKeyPath = validation.jsonKeyPath ?? args.jsonKeyPath;
+  }
+
+  settingsManager.setPlayStoreConfig(configUpdate);
+
+  const storageMode = args.jsonKeyData ? 'inline (embedded in config)' : `file (${validation.jsonKeyPath})`;
   let summary = `=== Google Play Store Configured ===\n\n`;
-  summary += `JSON Key: ${validation.jsonKeyPath}\n`;
+  summary += `Storage: ${storageMode}\n`;
   summary += `Service Account: ${validation.serviceAccountEmail}\n`;
   summary += `Project ID: ${validation.projectId}\n`;
 
@@ -38,10 +56,21 @@ export async function handleConfigurePlayStore(args: {
     summary += `\nWarnings:\n${validation.warnings.map((w) => `  - ${w}`).join('\n')}\n`;
   }
 
-  // If projectDir is provided, copy key and update fastlane config
+  // If projectDir is provided, write key to project
   if (args.projectDir) {
-    const destPath = playStoreService.copyKeyToProject(validation.jsonKeyPath, args.projectDir);
-    summary += `\nKey copied to: ${destPath}\n`;
+    let destPath: string;
+    if (args.jsonKeyData) {
+      // Write inline data to project
+      const keysDir = path.join(args.projectDir, 'fastlane', 'keys');
+      if (!fs.existsSync(keysDir)) {
+        fs.mkdirSync(keysDir, { recursive: true });
+      }
+      destPath = path.join(keysDir, 'play-store-service-account.json');
+      fs.writeFileSync(destPath, args.jsonKeyData);
+    } else {
+      destPath = playStoreService.copyKeyToProject(args.jsonKeyPath!, args.projectDir);
+    }
+    summary += `\nKey written to: ${destPath}\n`;
 
     // Update Appfile if it exists
     const appfilePath = path.join(args.projectDir, 'fastlane', 'Appfile');
@@ -54,7 +83,12 @@ export async function handleConfigurePlayStore(args: {
       }
     }
 
-    summary += `\n.gitignore updated to exclude fastlane/keys/\n`;
+    summary += `.gitignore updated to exclude fastlane/keys/\n`;
+  }
+
+  if (args.jsonKeyData) {
+    summary += `\nThe JSON key is stored in ~/.app-publisher/config.json.\n`;
+    summary += `You can safely delete the original key file.\n`;
   }
 
   summary += `\nNext steps:\n`;
@@ -79,13 +113,15 @@ export async function handlePlayStoreStatus(): Promise<CallToolResult> {
     };
   }
 
-  // Re-validate the key file
-  const validation = playStoreService.validateJsonKey(config.jsonKeyPath);
+  // Re-validate
+  const keyInput = config.jsonKeyData ?? config.jsonKeyPath;
+  const validation = keyInput ? playStoreService.validateJsonKey(keyInput) : { valid: false, errors: ['No key data'], warnings: [] };
+  const storageMode = config.jsonKeyData ? 'inline (config)' : `file (${config.jsonKeyPath})`;
 
   let status = `=== Google Play Store Status ===\n\n`;
   status += `Configured: Yes\n`;
-  status += `JSON Key: ${config.jsonKeyPath}\n`;
-  status += `Key File Exists: ${validation.valid ? 'Yes' : 'No'}\n`;
+  status += `Storage: ${storageMode}\n`;
+  status += `Key Valid: ${validation.valid ? 'Yes' : 'No'}\n`;
   status += `Service Account: ${config.serviceAccountEmail ?? 'Unknown'}\n`;
   status += `Project ID: ${config.projectId ?? 'Unknown'}\n`;
 
@@ -120,14 +156,14 @@ export async function handlePlayStoreSetupKey(args: {
   }
 
   // Copy key to project
-  const destPath = playStoreService.copyKeyToProject(validation.jsonKeyPath, args.projectDir);
+  const destPath = playStoreService.copyKeyToProject(args.jsonKeyPath, args.projectDir);
 
   // Store globally
-  settingsManager.setPlayStoreConfig(
-    validation.jsonKeyPath,
-    validation.serviceAccountEmail,
-    validation.projectId,
-  );
+  settingsManager.setPlayStoreConfig({
+    jsonKeyPath: validation.jsonKeyPath ?? args.jsonKeyPath,
+    serviceAccountEmail: validation.serviceAccountEmail,
+    projectId: validation.projectId,
+  });
 
   // Create or update Appfile
   const fastlaneDir = path.join(args.projectDir, 'fastlane');

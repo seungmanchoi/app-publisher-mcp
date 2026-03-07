@@ -113,17 +113,17 @@ class SettingsManager {
     return this.config.playStore;
   }
 
-  setPlayStoreConfig(jsonKeyPath: string, serviceAccountEmail?: string, projectId?: string): void {
+  setPlayStoreConfig(config: { jsonKeyPath?: string; jsonKeyData?: string; serviceAccountEmail?: string; projectId?: string }): void {
     this.config.playStore = {
-      jsonKeyPath,
-      serviceAccountEmail,
-      projectId,
+      ...this.config.playStore,
+      ...config,
     };
     this.persistConfig();
   }
 
   isPlayStoreConfigured(): boolean {
-    return !!(this.config.playStore?.jsonKeyPath);
+    const ps = this.config.playStore;
+    return !!(ps?.jsonKeyPath || ps?.jsonKeyData);
   }
 }
 

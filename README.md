@@ -38,7 +38,7 @@ Stop wasting time on Figma for app icons or manually resizing images for every s
 
 | Tool | Description |
 |------|-------------|
-| `configure_playstore` | Configure Google Play API with service account JSON key (validate + store globally) |
+| `configure_playstore` | Configure Google Play API with service account JSON key file path or inline JSON data (validate + store globally) |
 | `playstore_status` | Check Play Store API configuration and service account status |
 | `playstore_setup_key` | Full Android publishing setup: copy key, create Appfile/Fastfile, metadata structure |
 
@@ -278,13 +278,19 @@ Required only if you want to publish to Google Play.
 
 #### Step 3: Configure in MCP
 
-**Option A: Using the MCP tool (recommended)**
+**Option A: File path (key file stays on disk)**
 ```
 "Configure Play Store with JSON key at ~/Downloads/my-service-account.json for project ~/works/my-app"
 ```
 This validates the key, copies it to `fastlane/keys/`, updates Appfile, and adds to .gitignore.
 
-**Option B: Using playstore_setup_key tool**
+**Option B: Inline JSON (store in config, delete original file)**
+```
+"Configure Play Store with inline JSON key data: { ... }"
+```
+The JSON content is stored in `~/.app-publisher/config.json`. You can safely delete the original key file after configuration. When deploying to a project, the key is written from config to `fastlane/keys/`.
+
+**Option C: Using playstore_setup_key tool**
 ```
 "Set up Play Store publishing for ~/works/my-app with JSON key ~/Downloads/my-key.json and package name com.example.myapp"
 ```

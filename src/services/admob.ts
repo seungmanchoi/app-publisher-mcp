@@ -160,12 +160,25 @@ class AdMobService {
 
   async listAdUnits(appId?: string): Promise<IAdMobAdUnit[]> {
     const accountId = await this.getAccountId();
-    let endpoint = `/${accountId}/adUnits`;
+    const allAdUnits: IAdMobAdUnit[] = [];
+    let pageToken: string | undefined;
+
+    do {
+      let endpoint = `/${accountId}/adUnits?pageSize=10000`;
+      if (pageToken) {
+        endpoint += `&pageToken=${encodeURIComponent(pageToken)}`;
+      }
+      const data = await this.apiRequest<{ adUnits?: IAdMobAdUnit[]; nextPageToken?: string }>(endpoint);
+      if (data.adUnits) {
+        allAdUnits.push(...data.adUnits);
+      }
+      pageToken = data.nextPageToken;
+    } while (pageToken);
+
     if (appId) {
-      endpoint += `?filter=app_id=${appId}`;
+      return allAdUnits.filter((unit) => unit.appId === appId);
     }
-    const data = await this.apiRequest<{ adUnits?: IAdMobAdUnit[] }>(endpoint);
-    return data.adUnits ?? [];
+    return allAdUnits;
   }
 
   async createAdUnit(appId: string, displayName: string, adFormat: TAdFormat): Promise<IAdMobAdUnit> {

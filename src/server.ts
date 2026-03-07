@@ -42,7 +42,7 @@ export class AppPublisherServer {
   constructor() {
     this.server = new McpServer({
       name: 'app-publisher-mcp',
-      version: '1.7.0',
+      version: '1.7.1',
     });
 
     this.setupTools();
@@ -428,10 +428,11 @@ export class AppPublisherServer {
 
     this.server.tool(
       'configure_playstore',
-      'Configure Google Play Store API access by providing a service account JSON key file. Validates the key, stores the configuration globally, and optionally copies it to a project directory.',
+      'Configure Google Play Store API access. Provide either a file path (jsonKeyPath) or the JSON content directly (jsonKeyData). The inline method stores the key in ~/.app-publisher/config.json so you can delete the original file.',
       {
-        jsonKeyPath: z.string().describe('Path to the Google Play service account JSON key file'),
-        projectDir: z.string().optional().describe('Optional project directory to copy the key into fastlane/keys/'),
+        jsonKeyPath: z.string().optional().describe('Path to the Google Play service account JSON key file'),
+        jsonKeyData: z.string().optional().describe('Inline JSON content of the service account key (stored in config, no file needed)'),
+        projectDir: z.string().optional().describe('Optional project directory to write the key into fastlane/keys/'),
       },
       async (args) => handleConfigurePlayStore(args),
     );

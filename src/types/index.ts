@@ -215,7 +215,8 @@ export interface IStoreScreenshotResult {
 
 // Google Play Store Types
 export interface IPlayStoreConfig {
-  jsonKeyPath: string;
+  jsonKeyPath?: string;
+  jsonKeyData?: string;
   serviceAccountEmail?: string;
   projectId?: string;
 }
