@@ -37,4 +37,12 @@ export {
   handleConfigurePlayStore,
   handlePlayStoreStatus,
   handlePlayStoreSetupKey,
+  handlePlayStoreVerifyAccess,
+  handlePlayStoreGetAppInfo,
+  handlePlayStoreGetListing,
+  handlePlayStoreUpdateListing,
+  handlePlayStoreGetTracks,
+  handlePlayStoreListImages,
+  handlePlayStoreUploadImage,
+  handlePlayStoreDeleteImages,
 } from './playstore-handlers.js';

@@ -38,9 +38,17 @@ Stop wasting time on Figma for app icons or manually resizing images for every s
 
 | Tool | Description |
 |------|-------------|
-| `configure_playstore` | Configure Google Play API with service account JSON key file path or inline JSON data (validate + store globally) |
+| `configure_playstore` | Configure Google Play API with service account JSON key (file path or inline data) |
 | `playstore_status` | Check Play Store API configuration and service account status |
 | `playstore_setup_key` | Full Android publishing setup: copy key, create Appfile/Fastfile, metadata structure |
+| `playstore_verify_access` | Verify service account has API access to a specific app |
+| `playstore_get_app_info` | Get comprehensive app info: all listings + all release tracks |
+| `playstore_get_listing` | Get store listing(s) - all languages or a specific language |
+| `playstore_update_listing` | Update title, short description, full description for a language |
+| `playstore_get_tracks` | List release tracks with version codes, status, release notes |
+| `playstore_list_images` | List uploaded screenshots/images for a language and type |
+| `playstore_upload_image` | Upload screenshot, icon, or feature graphic (PNG/JPEG/WebP) |
+| `playstore_delete_images` | Delete all images of a specific type for a language |
 
 ### AdMob Integration
 

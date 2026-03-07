@@ -34,6 +34,14 @@ import {
   handleConfigurePlayStore,
   handlePlayStoreStatus,
   handlePlayStoreSetupKey,
+  handlePlayStoreVerifyAccess,
+  handlePlayStoreGetAppInfo,
+  handlePlayStoreGetListing,
+  handlePlayStoreUpdateListing,
+  handlePlayStoreGetTracks,
+  handlePlayStoreListImages,
+  handlePlayStoreUploadImage,
+  handlePlayStoreDeleteImages,
 } from './tools/index.js';
 
 export class AppPublisherServer {
@@ -42,7 +50,7 @@ export class AppPublisherServer {
   constructor() {
     this.server = new McpServer({
       name: 'app-publisher-mcp',
-      version: '1.7.1',
+      version: '1.8.0',
     });
 
     this.setupTools();
@@ -453,6 +461,90 @@ export class AppPublisherServer {
         packageName: z.string().optional().describe('Android package name (e.g., com.example.myapp)'),
       },
       async (args) => handlePlayStoreSetupKey(args),
+    );
+
+    this.server.tool(
+      'playstore_verify_access',
+      'Verify that the service account has API access to a specific app on Google Play. Tests by creating and deleting an edit session.',
+      {
+        packageName: z.string().describe('Android package name (e.g., com.example.myapp)'),
+      },
+      async (args) => handlePlayStoreVerifyAccess(args),
+    );
+
+    this.server.tool(
+      'playstore_get_app_info',
+      'Get comprehensive app information from Google Play Console including all store listings (title, descriptions per language) and release tracks (production, beta, alpha, internal) with version codes and status.',
+      {
+        packageName: z.string().describe('Android package name (e.g., com.example.myapp)'),
+      },
+      async (args) => handlePlayStoreGetAppInfo(args),
+    );
+
+    this.server.tool(
+      'playstore_get_listing',
+      'Get store listing(s) for an app. If language is specified, returns the full listing for that language. Otherwise returns all listings with titles and short descriptions.',
+      {
+        packageName: z.string().describe('Android package name'),
+        language: z.string().optional().describe('BCP-47 language code (e.g., en-US, ko-KR). If omitted, returns all listings.'),
+      },
+      async (args) => handlePlayStoreGetListing(args),
+    );
+
+    this.server.tool(
+      'playstore_update_listing',
+      'Update store listing metadata for a specific language. Can update title (max 50 chars), short description (max 80 chars), and/or full description (max 4000 chars). Changes are committed immediately.',
+      {
+        packageName: z.string().describe('Android package name'),
+        language: z.string().describe('BCP-47 language code (e.g., en-US, ko-KR)'),
+        title: z.string().optional().describe('App title (max 50 characters)'),
+        shortDescription: z.string().optional().describe('Short description (max 80 characters)'),
+        fullDescription: z.string().optional().describe('Full description (max 4000 characters)'),
+      },
+      async (args) => handlePlayStoreUpdateListing(args),
+    );
+
+    this.server.tool(
+      'playstore_get_tracks',
+      'List all release tracks for an app with version codes, release status, and release notes. Tracks include: production, beta, alpha, internal.',
+      {
+        packageName: z.string().describe('Android package name'),
+      },
+      async (args) => handlePlayStoreGetTracks(args),
+    );
+
+    this.server.tool(
+      'playstore_list_images',
+      'List uploaded images/screenshots for an app. Image types: phoneScreenshots, sevenInchScreenshots, tenInchScreenshots, tvScreenshots, wearScreenshots, icon, featureGraphic, tvBanner.',
+      {
+        packageName: z.string().describe('Android package name'),
+        language: z.string().describe('BCP-47 language code (e.g., en-US, ko-KR)'),
+        imageType: z.string().describe('Image type: phoneScreenshots, sevenInchScreenshots, tenInchScreenshots, tvScreenshots, wearScreenshots, icon, featureGraphic, tvBanner'),
+      },
+      async (args) => handlePlayStoreListImages(args),
+    );
+
+    this.server.tool(
+      'playstore_upload_image',
+      'Upload an image (screenshot, icon, feature graphic, etc.) to Google Play Store listing. Supported formats: PNG, JPEG, WebP. Changes are committed immediately.',
+      {
+        packageName: z.string().describe('Android package name'),
+        language: z.string().describe('BCP-47 language code (e.g., en-US, ko-KR)'),
+        imageType: z.string().describe('Image type: phoneScreenshots, sevenInchScreenshots, tenInchScreenshots, icon, featureGraphic, tvBanner'),
+        imagePath: z.string().describe('Path to the image file to upload'),
+      },
+      async (args) => handlePlayStoreUploadImage(args),
+    );
+
+    this.server.tool(
+      'playstore_delete_images',
+      'Delete all images of a specific type for a language. Use before re-uploading screenshots to replace them.',
+      {
+        packageName: z.string().describe('Android package name'),
+        language: z.string().describe('BCP-47 language code (e.g., en-US, ko-KR)'),
+        imageType: z.string().describe('Image type to delete all images for'),
+      },
+      async (args) => handlePlayStoreDeleteImages(args),
     );
   }
 
